@@ -304,9 +304,16 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     private void initializeWfbNg() {
         setDefaultGsKey();
         copyGSKey();
-        wfbLink = new WfbNgLink(this);
-        wfbLink.SetWfbNGStatsChanged(this);
-        wfbLinkManager = new WfbLinkManager(this, binding, wfbLink);
+        try {
+            wfbLink = new WfbNgLink(this);
+            wfbLink.SetWfbNGStatsChanged(this);
+            wfbLinkManager = new WfbLinkManager(this, binding, wfbLink);
+        } catch (UnsatisfiedLinkError e) {
+            Log.w(TAG, "WFB-NG native library is unavailable on this device/ABI. WFB features disabled for UI debugging.", e);
+            Toast.makeText(this, "WFB-NG native library unavailable; UI debug mode", Toast.LENGTH_LONG).show();
+            wfbLink = null;
+            wfbLinkManager = null;
+        }
     }
 
     // ----------------------------------------------------------------------------
@@ -317,10 +324,22 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
      * Initializes VideoPlayer and configures surfaces for VR or standard mode.
      */
     private void initializeVideoPlayers() {
-        videoPlayer = new VideoPlayer(this);
-        videoPlayer.setIVideoParamsChanged(this);
+        try {
+            videoPlayer = new VideoPlayer(this);
+            videoPlayer.setIVideoParamsChanged(this);
+        } catch (UnsatisfiedLinkError e) {
+            Log.w(TAG, "Video native library is unavailable on this device/ABI. Video playback disabled for UI debugging.", e);
+            Toast.makeText(this, "Video native library unavailable; UI debug mode", Toast.LENGTH_LONG).show();
+            videoPlayer = null;
+        }
 
         isVRMode = getVRSetting();
+
+        if (videoPlayer == null) {
+            binding.surfaceViewRight.setVisibility(View.GONE);
+            binding.surfaceViewLeft.setVisibility(View.GONE);
+            return;
+        }
 
         if (isVRMode) {
             setupVRVideoPlayers();
@@ -698,7 +717,9 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             editor.putBoolean("adaptive_link_enabled", newState);
             editor.apply();
             // Call instance method on the WfbNgLink instance via the wfbLinkManager.
-            wfbLink.nativeSetAdaptiveLinkEnabled(newState);
+            if (wfbLink != null) {
+                wfbLink.nativeSetAdaptiveLinkEnabled(newState);
+            }
             return true;
         });
 
@@ -721,7 +742,9 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
                 editor.putInt("adaptive_tx_power", power);
                 editor.apply();
                 // Call instance method on the WfbNgLink instance via the wfbLinkManager.
-                wfbLink.nativeSetTxPower(power);
+                if (wfbLink != null) {
+                    wfbLink.nativeSetTxPower(power);
+                }
                 return true;
             });
         }
@@ -739,7 +762,9 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             editor.putBoolean("custom_fec_enabled", newState);
             editor.apply();
             // Call instance method on the WfbNgLink instance via the wfbLinkManager.
-            wfbLink.nativeSetUseFec(newState ? 1 : 0);
+            if (wfbLink != null) {
+                wfbLink.nativeSetUseFec(newState ? 1 : 0);
+            }
             return true;
         });
 
@@ -754,7 +779,9 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             SharedPreferences.Editor editor = getSharedPreferences("general", MODE_PRIVATE).edit();
             editor.putBoolean("custom_ldpc_enabled", newState);
             editor.apply();
-            wfbLink.nativeSetUseLdpc(newState ? 1 : 0);
+            if (wfbLink != null) {
+                wfbLink.nativeSetUseLdpc(newState ? 1 : 0);
+            }
             return true;
         });
 
@@ -769,7 +796,9 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             SharedPreferences.Editor editor = getSharedPreferences("general", MODE_PRIVATE).edit();
             editor.putBoolean("custom_stbc_enabled", newState);
             editor.apply();
-            wfbLink.nativeSetUseStbc(newState ? 1 : 0);
+            if (wfbLink != null) {
+                wfbLink.nativeSetUseStbc(newState ? 1 : 0);
+            }
             return true;
         });
 
@@ -839,6 +868,9 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     }
 
     void initDefaultOptions() {
+        if (wfbLink == null) {
+            return;
+        }
         SharedPreferences prefs = getSharedPreferences("general", MODE_PRIVATE);
         boolean adaptiveEnabled = prefs.getBoolean("adaptive_link_enabled", true);
         int adaptiveTxPower = prefs.getInt("adaptive_tx_power", 20);
@@ -948,8 +980,12 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
      * Starts the native Mavlink service and posts an initial Runnable to the Handler.
      */
     private void setupMavlink() {
-        MavlinkNative.nativeStart(this);
-        handler.post(runnable);
+        try {
+            MavlinkNative.nativeStart(this);
+            handler.post(runnable);
+        } catch (UnsatisfiedLinkError e) {
+            Log.w(TAG, "Mavlink native library is unavailable on this device/ABI. Mavlink disabled for UI debugging.", e);
+        }
     }
 
     // ----------------------------------------------------------------------------
@@ -1114,9 +1150,13 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             if (dvrUri != null) {
                 startDvr(dvrUri);
             } else {
-                wfbLinkManager.stopAdapters();
-                videoPlayer.stop();
-                videoPlayer.stopAudio();
+                if (wfbLinkManager != null) {
+                    wfbLinkManager.stopAdapters();
+                }
+                if (videoPlayer != null) {
+                    videoPlayer.stop();
+                    videoPlayer.stopAudio();
+                }
 
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
                 intent.addCategory(Intent.CATEGORY_DEFAULT);
@@ -1136,7 +1176,9 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
         }
         try {
             dvrFd = getContentResolver().openFileDescriptor(dvrUri, "rw");
-            videoPlayer.startDvr(dvrFd.getFd(), getDvrMP4());
+            if (videoPlayer != null) {
+                videoPlayer.startDvr(dvrFd.getFd(), getDvrMP4());
+            }
             binding.imgBtnRecord.setImageResource(R.drawable.recording);
         } catch (IOException e) {
             Log.e(TAG, "Failed to open dvr file ", e);
@@ -1173,7 +1215,9 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
         }
         binding.imgRecIndicator.setVisibility(View.INVISIBLE);
         binding.imgBtnRecord.setImageResource(R.drawable.record);
-        videoPlayer.stopDvr();
+        if (videoPlayer != null) {
+            videoPlayer.stopDvr();
+        }
         if (recordTimer != null) {
             recordTimer.cancel();
             recordTimer.purge();
@@ -1205,7 +1249,9 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
                     InputStream inputStream = getContentResolver().openInputStream(uri);
                     setGsKey(inputStream);
                     copyGSKey();
-                    wfbLinkManager.refreshKey();
+                    if (wfbLinkManager != null) {
+                        wfbLinkManager.refreshKey();
+                    }
                     inputStream.close();
                 } catch (IOException e) {
                     Log.e(TAG, "Failed to import gs.key from " + uri);
@@ -1292,17 +1338,25 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     public void registerReceivers() {
-        IntentFilter usbFilter = new IntentFilter();
-        usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
-        usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
-        usbFilter.addAction(WfbLinkManager.ACTION_USB_PERMISSION);
         IntentFilter batFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
 
         if (Build.VERSION.SDK_INT >= 33) {
-            registerReceiver(wfbLinkManager, usbFilter, Context.RECEIVER_NOT_EXPORTED);
+            if (wfbLinkManager != null) {
+                IntentFilter usbFilter = new IntentFilter();
+                usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+                usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+                usbFilter.addAction(WfbLinkManager.ACTION_USB_PERMISSION);
+                registerReceiver(wfbLinkManager, usbFilter, Context.RECEIVER_NOT_EXPORTED);
+            }
             registerReceiver(batteryReceiver, batFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
-            registerReceiver(wfbLinkManager, usbFilter);
+            if (wfbLinkManager != null) {
+                IntentFilter usbFilter = new IntentFilter();
+                usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+                usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+                usbFilter.addAction(WfbLinkManager.ACTION_USB_PERMISSION);
+                registerReceiver(wfbLinkManager, usbFilter);
+            }
             registerReceiver(batteryReceiver, batFilter);
         }
     }
@@ -1324,9 +1378,13 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
         unregisterReceivers();
 
-        videoPlayer.stop();
-        videoPlayer.stopAudio();
-        wfbLinkManager.stopAdapters();
+        if (videoPlayer != null) {
+            videoPlayer.stop();
+            videoPlayer.stopAudio();
+        }
+        if (wfbLinkManager != null) {
+            wfbLinkManager.stopAdapters();
+        }
 
         // Stop VPN service
         Log.w(TAG, "onPause: stopping service");
@@ -1337,12 +1395,19 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
     @Override
     protected void onStop() {
-        MavlinkNative.nativeStop(this);
+        try {
+            MavlinkNative.nativeStop(this);
+        } catch (UnsatisfiedLinkError ignored) {
+        }
         handler.removeCallbacks(runnable);
         unregisterReceivers();
-        wfbLinkManager.stopAdapters();
-        videoPlayer.stop();
-        videoPlayer.stopAudio();
+        if (wfbLinkManager != null) {
+            wfbLinkManager.stopAdapters();
+        }
+        if (videoPlayer != null) {
+            videoPlayer.stop();
+            videoPlayer.stopAudio();
+        }
         super.onStop();
     }
 
@@ -1350,15 +1415,19 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     protected void onResume() {
         registerReceivers();
 
-        wfbLinkManager.setChannel(getChannel(this));
-        wfbLinkManager.setBandwidth(getBandwidth(this));
+        if (wfbLinkManager != null) {
+            wfbLinkManager.setChannel(getChannel(this));
+            wfbLinkManager.setBandwidth(getBandwidth(this));
 
-        // On resume is called when the app is reopened, a device might have been plugged since the last time it started.
-        wfbLinkManager.refreshAdapters();
+            // On resume is called when the app is reopened, a device might have been plugged since the last time it started.
+            wfbLinkManager.refreshAdapters();
 
-        wfbLinkManager.startAdapters();
-        videoPlayer.start();
-        videoPlayer.startAudio();
+            wfbLinkManager.startAdapters();
+        }
+        if (videoPlayer != null) {
+            videoPlayer.start();
+            videoPlayer.startAudio();
+        }
 
         osdManager.restoreOSDConfig();
 
@@ -1377,9 +1446,11 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
         SharedPreferences.Editor editor = prefs.edit();
         editor.putInt("wifi-channel", channel);
         editor.apply();
-        wfbLinkManager.stopAdapters();
-        wfbLinkManager.setChannel(channel);
-        wfbLinkManager.startAdapters();
+        if (wfbLinkManager != null) {
+            wfbLinkManager.stopAdapters();
+            wfbLinkManager.setChannel(channel);
+            wfbLinkManager.startAdapters();
+        }
     }
 
     @Override
@@ -1392,9 +1463,11 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
         SharedPreferences.Editor editor = prefs.edit();
         editor.putInt("bandwidth", bandwidth);
         editor.apply();
-        wfbLinkManager.stopAdapters();
-        wfbLinkManager.setBandwidth(bandwidth);
-        wfbLinkManager.startAdapters();
+        if (wfbLinkManager != null) {
+            wfbLinkManager.stopAdapters();
+            wfbLinkManager.setBandwidth(bandwidth);
+            wfbLinkManager.startAdapters();
+        }
     }
 
     @Override
