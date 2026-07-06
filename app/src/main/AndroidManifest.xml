@@ -45,6 +45,12 @@
         </provider>
 
         <activity
+            android:name=".OpenIpcConfigActivity"
+            android:exported="false"
+            android:screenOrientation="sensorLandscape"
+            android:theme="@style/Theme.FPVueMat" />
+
+        <activity
             android:name=".VideoActivity"
             android:exported="true"
             android:launchMode="singleInstance"

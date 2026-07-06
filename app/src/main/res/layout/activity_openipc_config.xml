@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="OpenIPC Config"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+    <TextView
+        android:id="@+id/textStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:text="Not connected" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <ScrollView
+            android:layout_width="160dp"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <Button android:id="@+id/navConnect" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Connect" />
+                <Button android:id="@+id/navCamera" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Camera" />
+                <Button android:id="@+id/navWfb" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="WFB" />
+                <Button android:id="@+id/navTelemetry" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Telemetry" />
+                <Button android:id="@+id/navSetup" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Setup" />
+                <Button android:id="@+id/navAdvanced" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Advanced" />
+                <Button android:id="@+id/navFirmware" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Firmware" />
+                <Button android:id="@+id/navPrefs" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Preferences" />
+            </LinearLayout>
+        </ScrollView>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#4C61D8" />
+
+        <ScrollView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:fillViewport="true">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:id="@+id/sectionConnection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <EditText
+                    android:id="@+id/editHost"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Camera IP"
+                    android:inputType="textUri" />
+
+                <EditText
+                    android:id="@+id/editPort"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="SSH port"
+                    android:inputType="number" />
+
+                <EditText
+                    android:id="@+id/editUsername"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Username" />
+
+                <EditText
+                    android:id="@+id/editPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Password"
+                    android:inputType="textPassword" />
+
+                <Button
+                    android:id="@+id/btnConnect"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Connect &amp; Read" />
+
+                <TextView
+                    android:id="@+id/textDeviceInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="8dp"
+                    android:textIsSelectable="true" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/sectionCamera"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Resolution" />
+                <Spinner android:id="@+id/spinnerResolution" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FPS" />
+                <Spinner android:id="@+id/spinnerFps" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Codec" />
+                <Spinner android:id="@+id/spinnerCodec" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Bitrate" />
+                <Spinner android:id="@+id/spinnerBitrate" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Exposure" />
+                <Spinner android:id="@+id/spinnerExposure" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Contrast" />
+                <Spinner android:id="@+id/spinnerContrast" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Hue" />
+                <Spinner android:id="@+id/spinnerHue" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Saturation" />
+                <Spinner android:id="@+id/spinnerSaturation" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Luminance" />
+                <Spinner android:id="@+id/spinnerLuminance" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+                <CheckBox android:id="@+id/checkFlip" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Flip" />
+                <CheckBox android:id="@+id/checkMirror" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Mirror" />
+                <CheckBox android:id="@+id/checkAudio" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Audio enabled" />
+                <CheckBox android:id="@+id/checkRecord" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Onboard recording" />
+                <CheckBox android:id="@+id/checkRecordNoTime" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Record no time" />
+
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="FPV" android:textAppearance="?android:attr/textAppearanceMedium" />
+                <CheckBox android:id="@+id/checkFpvEnabled" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FPV enabled" />
+                <EditText android:id="@+id/editFpvNoiseLevel" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="FPV noiseLevel" />
+                <EditText android:id="@+id/editFpvRoiQp" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="FPV roiQp" />
+                <EditText android:id="@+id/editFpvRefEnhance" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="FPV refEnhance" />
+                <CheckBox android:id="@+id/checkFpvRefPred" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FPV refPred" />
+                <EditText android:id="@+id/editFpvIntraLine" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="FPV intraLine" />
+                <CheckBox android:id="@+id/checkFpvIntraQp" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FPV intraQp" />
+                <EditText android:id="@+id/editFpvRoiRect" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="FPV roiRect, LeftxTopxHxW" />
+
+                <Button
+                    android:id="@+id/btnSaveMajestic"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:enabled="false"
+                    android:text="Save &amp; Restart Majestic" />
+
+                <TextView
+                    android:id="@+id/textMajesticPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="8dp"
+                    android:textIsSelectable="true" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/sectionWfb"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <Button android:id="@+id/btnReadWfb" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Read WFB Config" />
+
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Channel" />
+                <Spinner android:id="@+id/spinnerWfbChannel" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:id="@+id/textWfbTxPower" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="TX Power: 0" />
+                <SeekBar android:id="@+id/seekWfbTxPower" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="60" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Bandwidth" />
+                <Spinner android:id="@+id/spinnerWfbBandwidth" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MCS" />
+                <Spinner android:id="@+id/spinnerWfbMcs" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FEC K" />
+                <Spinner android:id="@+id/spinnerWfbFecK" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FEC N" />
+                <Spinner android:id="@+id/spinnerWfbFecN" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MLink" />
+                <Spinner android:id="@+id/spinnerWfbMlink" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <CheckBox android:id="@+id/checkWfbStbc" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="STBC" />
+                <CheckBox android:id="@+id/checkWfbLdpc" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="LDPC" />
+
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Raw config" android:textAppearance="?android:attr/textAppearanceMedium" />
+                <EditText android:id="@+id/editWfbConfig" android:layout_width="match_parent" android:layout_height="360dp" android:gravity="top|start" android:hint="/etc/wfb.yaml or /etc/wfb.conf" android:inputType="textMultiLine" android:textIsSelectable="true" />
+                <Button android:id="@+id/btnSaveWfb" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Save &amp; Restart WFB" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/sectionTelemetry"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <Button android:id="@+id/btnReadTelemetry" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Read Telemetry Config" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Serial Port" />
+                <Spinner android:id="@+id/spinnerTelemetrySerial" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Baud Rate" />
+                <Spinner android:id="@+id/spinnerTelemetryBaud" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Router" />
+                <Spinner android:id="@+id/spinnerTelemetryRouter" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MSP FPS" />
+                <Spinner android:id="@+id/spinnerTelemetryMspFps" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MCS Index" />
+                <Spinner android:id="@+id/spinnerTelemetryMcs" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Aggregate" />
+                <Spinner android:id="@+id/spinnerTelemetryAggregate" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="RC Channel" />
+                <Spinner android:id="@+id/spinnerTelemetryRcChannel" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <Button android:id="@+id/btnEnableUart0" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Enable UART0" />
+                <Button android:id="@+id/btnDisableUart0" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Disable UART0" />
+                <Button android:id="@+id/btnAddMavlink" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Add MAVLINK" />
+                <Button android:id="@+id/btnRemoveMsposdExtra" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Remove MSPOSD Extra" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Raw config" android:textAppearance="?android:attr/textAppearanceMedium" />
+                <EditText android:id="@+id/editTelemetryConfig" android:layout_width="match_parent" android:layout_height="320dp" android:gravity="top|start" android:hint="/etc/telemetry.conf" android:inputType="textMultiLine" android:textIsSelectable="true" />
+                <Button android:id="@+id/btnSaveTelemetry" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Save &amp; Restart Telemetry" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/sectionSetup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Camera Sensors" android:textAppearance="?android:attr/textAppearanceMedium" />
+                <Spinner android:id="@+id/spinnerSensorBin" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <Button android:id="@+id/btnUploadApplySensorBin" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Upload selected sensor &amp; restart Majestic" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Advanced sensor path" android:textAppearance="?android:attr/textAppearanceMedium" />
+                <EditText android:id="@+id/editSensorConfigPath" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Sensor path, e.g. /etc/sensors/imx415_fpv.bin" />
+                <Button android:id="@+id/btnApplySensorPath" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Apply Sensor Path &amp; Restart Majestic" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Key Management" android:textAppearance="?android:attr/textAppearanceMedium" />
+                <Button android:id="@+id/btnGetDroneKeyChecksum" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Get drone.key checksum" />
+                <Button android:id="@+id/btnDownloadDroneKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Download drone.key to app cache" />
+                <TextView android:id="@+id/textSetupInfo" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:textIsSelectable="true" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/sectionAdvanced"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <Button android:id="@+id/btnCheckAlink" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Check alink_drone" />
+                <Button android:id="@+id/btnEnableAlink" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Enable alink_drone" />
+                <Button android:id="@+id/btnDisableAlink" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Disable alink_drone" />
+                <Button android:id="@+id/btnSystemReport" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Generate system report" />
+                <Button android:id="@+id/btnViewSystemLogs" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="View system logs" />
+                <Button android:id="@+id/btnNetworkDiagnostics" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Network diagnostics" />
+                <TextView android:id="@+id/textAdvancedOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:textIsSelectable="true" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/sectionFirmware"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Firmware operations are intentionally not enabled yet. Companion's firmware tab performs backup, restore, bootloader replacement, sysupgrade, reboot detection, and SSH recovery. These operations need a dedicated safe Android flow before enabling." android:textIsSelectable="true" />
+                <Button android:id="@+id/btnFirmwareStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Read firmware/device status" />
+                <TextView android:id="@+id/textFirmwareOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:textIsSelectable="true" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/sectionPreferences"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <CheckBox android:id="@+id/checkRememberOpenIpcPassword" android:layout_width="match_parent" android:layout_height="wrap_content" android:checked="true" android:text="Remember OpenIPC password" />
+                <Button android:id="@+id/btnClearOpenIpcSettings" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Clear saved OpenIPC settings" />
+                <Button android:id="@+id/btnShowLocalLogHint" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Show log location hint" />
+                <TextView android:id="@+id/textPreferencesInfo" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:textIsSelectable="true" />
+            </LinearLayout>
+        </FrameLayout>
+        </ScrollView>
+    </LinearLayout>
+</LinearLayout>

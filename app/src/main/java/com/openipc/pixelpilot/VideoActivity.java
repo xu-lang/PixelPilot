@@ -92,8 +92,12 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     final Handler handler = new Handler(Looper.getMainLooper());
     final Runnable runnable = new Runnable() {
         public void run() {
-            MavlinkNative.nativeCallBack(VideoActivity.this);
-            handler.postDelayed(this, 100);
+            try {
+                MavlinkNative.nativeCallBack(VideoActivity.this);
+                handler.postDelayed(this, 100);
+            } catch (LinkageError e) {
+                Log.w(TAG, "Mavlink native callback unavailable; stopping callback loop.", e);
+            }
         }
     };
     protected DecodingInfo mDecodingInfo;
@@ -108,6 +112,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     private Timer recordTimer = null;
     private int seconds = 0;
     private boolean isVRMode = false;
+    private boolean mavlinkAvailable = false;
     private ConstraintLayout constraintLayout;
     private ConstraintSet constraintSet;
     private WfbNgLink wfbLink;
@@ -944,6 +949,12 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             return true;
         });
 
+        MenuItem openIpcConfig = drone.add("OpenIPC Config");
+        openIpcConfig.setOnMenuItemClickListener(item -> {
+            startActivity(new Intent(this, OpenIpcConfigActivity.class));
+            return true;
+        });
+
         // Add a new option to manage login credentials
         MenuItem loginCredentials = drone.add("Login Credentials");
         loginCredentials.setOnMenuItemClickListener(item -> {
@@ -982,8 +993,10 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     private void setupMavlink() {
         try {
             MavlinkNative.nativeStart(this);
+            mavlinkAvailable = true;
             handler.post(runnable);
-        } catch (UnsatisfiedLinkError e) {
+        } catch (LinkageError e) {
+            mavlinkAvailable = false;
             Log.w(TAG, "Mavlink native library is unavailable on this device/ABI. Mavlink disabled for UI debugging.", e);
         }
     }
@@ -1395,9 +1408,12 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
     @Override
     protected void onStop() {
-        try {
-            MavlinkNative.nativeStop(this);
-        } catch (UnsatisfiedLinkError ignored) {
+        if (mavlinkAvailable) {
+            try {
+                MavlinkNative.nativeStop(this);
+            } catch (LinkageError ignored) {
+            }
+            mavlinkAvailable = false;
         }
         handler.removeCallbacks(runnable);
         unregisterReceivers();

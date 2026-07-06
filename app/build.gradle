@@ -40,6 +40,13 @@ android {
     buildFeatures {
         viewBinding = true
     }
+
+    packaging {
+        resources {
+            excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+        }
+    }
+
     buildToolsVersion '35.0.0'
     ndkVersion '26.1.10909125'
 }
@@ -52,4 +59,6 @@ dependencies {
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.philjay.mpandroidchart)
+    implementation("com.hierynomus:sshj:0.39.0")
+    implementation("org.yaml:snakeyaml:2.2")
 }
