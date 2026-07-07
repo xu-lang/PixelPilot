@@ -64,6 +64,7 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     private static final String MAJESTIC_RESTART = "killall -1 majestic";
     private static final String WFB_RESTART = "wifibroadcast stop; sleep 2; wifibroadcast start";
     private static final String TELEMETRY_RESTART = "telemetry stop; sleep 2; telemetry start";
+    private static final String DATALINK_RESTART = "/etc/init.d/S98datalink stop ;/etc/init.d/S98datalink start";
     private static final String ALINK_STATUS = "grep -q \"alink_drone\" /etc/rc.local && echo \"true\" || echo \"false\"";
     private static final String ALINK_ENABLE = "grep -q \"alink_drone\" /etc/rc.local || sed -i '/^exit 0/i # Start alink drone service\\n/usr/bin/alink_drone \\&\\n' /etc/rc.local";
     private static final String ALINK_DISABLE = "sed -i '/# Start alink drone service/d; /alink_drone/d; /^$/d' /etc/rc.local";
@@ -156,8 +157,11 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         findViewById(R.id.btnSaveTelemetry).setOnClickListener(v -> saveTelemetryConfig());
         findViewById(R.id.btnEnableUart0).setOnClickListener(v -> runCommandWithToast("sed -i 's/console::respawn:\\/sbin\\/getty -L console 0 vt100/#console::respawn:\\/sbin\\/getty -L console 0 vt100/' /etc/inittab", "UART0 enabled"));
         findViewById(R.id.btnDisableUart0).setOnClickListener(v -> runCommandWithToast("sed -i 's/#console::respawn:\\/sbin\\/getty -L console 0 vt100/console::respawn:\\/sbin\\/getty -L console 0 vt100/' /etc/inittab", "UART0 disabled"));
+        findViewById(R.id.btnEnable40Mhz).setOnClickListener(v -> uploadAssetAndRun("binaries/clean/wifibroadcast", "/usr/bin/wifibroadcast", "dos2unix /usr/bin/wifibroadcast 2>/dev/null || true; chmod +x /usr/bin/wifibroadcast", "40MHz enabled"));
         findViewById(R.id.btnAddMavlink).setOnClickListener(v -> runCommandWithToast("grep -q mavlink /etc/rc.local || sed -i '/^exit 0/i mavlink-routerd \\&' /etc/rc.local", "MAVLink added"));
-        findViewById(R.id.btnRemoveMsposdExtra).setOnClickListener(v -> runCommandWithToast("sed -i 's/sleep 5/#sleep 5/' /usr/bin/telemetry; /etc/init.d/S98datalink stop ;/etc/init.d/S98datalink start", "MSPOSD extra removed"));
+        findViewById(R.id.btnMsposdCameraExtra).setOnClickListener(v -> uploadAssetAndRun("binaries/clean/telemetry_msposd_extra", "/usr/bin/telemetry", "chmod +x /usr/bin/telemetry; " + DATALINK_RESTART, "MSPOSD Camera Extra enabled"));
+        findViewById(R.id.btnMsposdGsExtra).setOnClickListener(v -> uploadAssetAndRun("binaries/clean/telemetry_msposd_gs", "/usr/bin/telemetry", "chmod +x /usr/bin/telemetry; " + DATALINK_RESTART, "MSPOSD GS Extra enabled"));
+        findViewById(R.id.btnRemoveMsposdExtra).setOnClickListener(v -> runCommandWithToast("sed -i 's/sleep 5/#sleep 5/' /usr/bin/telemetry; " + DATALINK_RESTART, "MSPOSD extra removed"));
         findViewById(R.id.btnApplySensorPath).setOnClickListener(v -> applySensorPath());
         findViewById(R.id.btnUploadApplySensorBin).setOnClickListener(v -> uploadAndApplySelectedSensorBin());
         findViewById(R.id.btnGetDroneKeyChecksum).setOnClickListener(v -> getDroneKeyChecksum());
@@ -279,8 +283,8 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         setSpinnerItems(spinnerLuminance, multiplesOf5(1, 100));
 
         setSpinnerItems(spinnerWfbChannel,
-                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14",
-                "36", "40", "44", "48", "52", "56", "60", "64", "100", "104", "108", "112", "116", "120", "124", "128", "132", "136", "140", "144", "149", "153", "157", "161", "165", "169", "173", "177");
+                "2412 MHz [1]", "2417 MHz [2]", "2422 MHz [3]", "2427 MHz [4]", "2432 MHz [5]", "2437 MHz [6]", "2442 MHz [7]", "2447 MHz [8]", "2452 MHz [9]", "2457 MHz [10]", "2462 MHz [11]", "2467 MHz [12]", "2472 MHz [13]", "2484 MHz [14]",
+                "5180 MHz [36]", "5200 MHz [40]", "5220 MHz [44]", "5240 MHz [48]", "5260 MHz [52]", "5280 MHz [56]", "5300 MHz [60]", "5320 MHz [64]", "5500 MHz [100]", "5520 MHz [104]", "5540 MHz [108]", "5560 MHz [112]", "5580 MHz [116]", "5600 MHz [120]", "5620 MHz [124]", "5640 MHz [128]", "5660 MHz [132]", "5680 MHz [136]", "5700 MHz [140]", "5720 MHz [144]", "5745 MHz [149]", "5765 MHz [153]", "5785 MHz [157]", "5805 MHz [161]", "5825 MHz [165]", "5845 MHz [169]", "5865 MHz [173]", "5885 MHz [177]");
         setSpinnerItems(spinnerWfbBandwidth, "20", "40");
         setSpinnerItems(spinnerWfbMcs, rangeStrings(0, 30, 1));
         setSpinnerItems(spinnerWfbFecK, rangeStrings(0, 19, 1));
@@ -430,19 +434,35 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
 
     private String spinnerValue(Spinner spinner) {
         Object selected = spinner.getSelectedItem();
-        return selected == null ? "" : String.valueOf(selected);
+        String value = selected == null ? "" : String.valueOf(selected);
+        return spinner == spinnerWfbChannel ? channelFromFrequencyLabel(value) : value;
     }
 
     private void selectSpinnerValue(Spinner spinner, String value) {
         if (TextUtils.isEmpty(value) || spinner.getAdapter() == null) {
             return;
         }
+        String normalizedValue = spinner == spinnerWfbChannel ? channelFromFrequencyLabel(value) : value;
         for (int i = 0; i < spinner.getAdapter().getCount(); i++) {
-            if (value.equals(String.valueOf(spinner.getAdapter().getItem(i)))) {
+            String item = String.valueOf(spinner.getAdapter().getItem(i));
+            String normalizedItem = spinner == spinnerWfbChannel ? channelFromFrequencyLabel(item) : item;
+            if (normalizedValue.equals(normalizedItem)) {
                 spinner.setSelection(i);
                 return;
             }
         }
+    }
+
+    private String channelFromFrequencyLabel(String value) {
+        if (TextUtils.isEmpty(value)) {
+            return "";
+        }
+        int openBracket = value.lastIndexOf('[');
+        int closeBracket = value.lastIndexOf(']');
+        if (openBracket >= 0 && closeBracket > openBracket) {
+            return value.substring(openBracket + 1, closeBracket).trim();
+        }
+        return value.trim();
     }
 
     private void setWfbTxPower(String value) {
@@ -739,6 +759,33 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
                 });
             } catch (Exception e) {
                 postError("Command failed: " + e.getMessage());
+            }
+        });
+    }
+
+    private void uploadAssetAndRun(String assetPath, String remotePath, String command, String label) {
+        ConnectionConfig config = readConnectionConfig();
+        if (config == null) {
+            return;
+        }
+        setBusy(true, label + "...");
+        executor.execute(() -> {
+            File temp = new File(getCacheDir(), new File(assetPath).getName());
+            try {
+                copyAssetToFile(assetPath, temp);
+                try (SSHClient ssh = openSsh(config)) {
+                    ssh.newSCPFileTransfer().upload(temp.getAbsolutePath(), remotePath);
+                    exec(ssh, command);
+                }
+                mainHandler.post(() -> {
+                    setBusy(false, label);
+                    Toast.makeText(this, label, Toast.LENGTH_SHORT).show();
+                });
+            } catch (Exception e) {
+                postError(label + " failed: " + e.getMessage());
+            } finally {
+                //noinspection ResultOfMethodCallIgnored
+                temp.delete();
             }
         });
     }

@@ -89,6 +89,7 @@
     <color name="openipc_nav_hover">#121D25</color>
     <color name="openipc_accent">#3FD1C6</color>
     <color name="openipc_accent_soft">#263FD1C6</color>
+    <color name="openipc_slider_progress">#3B82F6</color>
     <color name="openipc_text">#E7EEF4</color>
     <color name="openipc_nav_text_selected">#FFFFFF</color>
     <color name="openipc_text_muted">#9AAAB6</color>

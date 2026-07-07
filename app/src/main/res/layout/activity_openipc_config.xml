@@ -207,7 +207,7 @@
                 <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Channel" />
                 <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerWfbChannel" android:layout_width="match_parent" android:layout_height="wrap_content" />
                 <TextView style="@style/OpenIpcLabel" android:id="@+id/textWfbTxPower" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="TX Power: 0" />
-                <SeekBar android:id="@+id/seekWfbTxPower" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="60" />
+                <SeekBar android:id="@+id/seekWfbTxPower" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="60" android:progressTint="@color/openipc_slider_progress" android:progressBackgroundTint="@color/openipc_stroke" android:thumbTint="@color/openipc_slider_progress" />
                 <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Bandwidth" />
                 <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerWfbBandwidth" android:layout_width="match_parent" android:layout_height="wrap_content" />
                 <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MCS" />
@@ -250,7 +250,10 @@
                 <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerTelemetryRcChannel" android:layout_width="match_parent" android:layout_height="wrap_content" />
                 <Button style="@style/OpenIpcButton" android:id="@+id/btnEnableUart0" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Enable UART0" />
                 <Button style="@style/OpenIpcButton" android:id="@+id/btnDisableUart0" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Disable UART0" />
+                <Button style="@style/OpenIpcButton" android:id="@+id/btnEnable40Mhz" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Enable 40MHz" />
                 <Button style="@style/OpenIpcButton" android:id="@+id/btnAddMavlink" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Add MAVLINK" />
+                <Button style="@style/OpenIpcButton" android:id="@+id/btnMsposdCameraExtra" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MSPOSD Camera Extra" />
+                <Button style="@style/OpenIpcButton" android:id="@+id/btnMsposdGsExtra" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MSPOSD GS Extra" />
                 <Button style="@style/OpenIpcButton" android:id="@+id/btnRemoveMsposdExtra" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Remove MSPOSD Extra" />
                 <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Raw config" />
                 <EditText style="@style/OpenIpcEditText" android:id="@+id/editTelemetryConfig" android:layout_width="match_parent" android:layout_height="320dp" android:gravity="top|start" android:hint="/etc/telemetry.conf" android:inputType="textMultiLine" android:textIsSelectable="true" />
