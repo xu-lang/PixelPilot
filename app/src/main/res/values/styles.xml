@@ -58,4 +58,73 @@
         <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Material3.LargeComponent
         </item>
     </style>
+
+    <style name="OpenIpcNavButton">
+        <item name="android:background">@drawable/openipc_nav_button</item>
+        <item name="android:backgroundTint">@null</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">@color/openipc_nav_text</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:layout_marginBottom">2dp</item>
+        <item name="android:minHeight">38dp</item>
+        <item name="android:paddingStart">18dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:gravity">center_vertical|start</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="OpenIpcButton">
+        <item name="android:background">@drawable/openipc_primary_button</item>
+        <item name="android:backgroundTint">@null</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">@color/openipc_button_text</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:minHeight">42dp</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="OpenIpcLabel">
+        <item name="android:textColor">@color/openipc_text_muted</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:layout_marginTop">12dp</item>
+    </style>
+
+    <style name="OpenIpcSectionTitle">
+        <item name="android:textColor">@color/openipc_text</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginTop">14dp</item>
+    </style>
+
+    <style name="OpenIpcOutput">
+        <item name="android:textColor">@color/openipc_text_dim</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+    </style>
+
+    <style name="OpenIpcEditText">
+        <item name="android:background">@drawable/openipc_field</item>
+        <item name="android:textColor">@color/openipc_text</item>
+        <item name="android:textColorHint">@color/openipc_text_muted</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+    </style>
+
+    <style name="OpenIpcSpinner">
+        <item name="android:background">@drawable/openipc_field</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+    </style>
+
+    <style name="OpenIpcCheckBox">
+        <item name="android:textColor">@color/openipc_text</item>
+        <item name="android:buttonTint">@color/openipc_accent</item>
+        <item name="android:layout_marginTop">6dp</item>
+    </style>
 </resources>

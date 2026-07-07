@@ -73,4 +73,27 @@
     <color name="my_app_on_background_dark">#E1E2E5</color>
     <color name="my_app_on_error_dark">#680003</color>
     <color name="my_app_on_surface_dark">#E1E2E5</color>
+
+    <color name="openipc_bg">#090D12</color>
+    <color name="openipc_bg_mid">#0E151D</color>
+    <color name="openipc_bg_high">#13202B</color>
+    <color name="openipc_panel">#101820</color>
+    <color name="openipc_panel_alt">#17232E</color>
+    <color name="openipc_panel_selected">#10232B</color>
+    <color name="openipc_field">#0C131A</color>
+    <color name="openipc_field_focus">#12202A</color>
+    <color name="openipc_button">#13212A</color>
+    <color name="openipc_button_pressed">#1B333E</color>
+    <color name="openipc_button_disabled">#18212A</color>
+    <color name="openipc_button_stroke">#31515A</color>
+    <color name="openipc_nav_hover">#121D25</color>
+    <color name="openipc_accent">#3FD1C6</color>
+    <color name="openipc_accent_soft">#263FD1C6</color>
+    <color name="openipc_text">#E7EEF4</color>
+    <color name="openipc_nav_text_selected">#FFFFFF</color>
+    <color name="openipc_text_muted">#9AAAB6</color>
+    <color name="openipc_text_dim">#71808B</color>
+    <color name="openipc_text_disabled">#56636D</color>
+    <color name="openipc_stroke">#25323C</color>
+    <color name="openipc_stroke_soft">#1A252E</color>
 </resources>

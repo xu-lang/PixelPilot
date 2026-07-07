@@ -2,13 +2,18 @@ package com.openipc.pixelpilot;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -62,6 +67,8 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     private static final String ALINK_STATUS = "grep -q \"alink_drone\" /etc/rc.local && echo \"true\" || echo \"false\"";
     private static final String ALINK_ENABLE = "grep -q \"alink_drone\" /etc/rc.local || sed -i '/^exit 0/i # Start alink drone service\\n/usr/bin/alink_drone \\&\\n' /etc/rc.local";
     private static final String ALINK_DISABLE = "sed -i '/# Start alink drone service/d; /alink_drone/d; /^$/d' /etc/rc.local";
+    private static final int NAV_TEXT_SELECTED = Color.WHITE;
+    private static final int NAV_TEXT_IDLE = Color.rgb(154, 170, 182);
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -137,6 +144,7 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         bindViews();
         setupChoiceControls();
         setupEditTextBehavior(findViewById(android.R.id.content));
+        applyOpenIpcTextColors(findViewById(android.R.id.content));
         loadConnectionSettings();
         setupTabs();
 
@@ -341,9 +349,68 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     }
 
     private void setSpinnerItems(Spinner spinner, String... values) {
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, values);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.openipc_spinner_item, values);
+        adapter.setDropDownViewResource(R.layout.openipc_spinner_dropdown_item);
         spinner.setAdapter(adapter);
+        setupSpinnerScrollBehavior(spinner);
+    }
+
+    private void applyOpenIpcTextColors(View root) {
+        if (root instanceof TextView && !(root instanceof Button) && !(root instanceof EditText)) {
+            ((TextView) root).setTextColor(getColor(R.color.openipc_text_muted));
+        }
+        if (root instanceof EditText) {
+            ((EditText) root).setTextColor(getColor(R.color.openipc_text));
+            ((EditText) root).setHintTextColor(getColor(R.color.openipc_text_muted));
+            root.setBackgroundResource(R.drawable.openipc_field);
+        }
+        if (root instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) root;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                applyOpenIpcTextColors(group.getChildAt(i));
+            }
+        }
+    }
+
+    private void setupSpinnerScrollBehavior(Spinner spinner) {
+        final int touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
+        final float[] downY = new float[1];
+        final boolean[] moved = new boolean[1];
+
+        spinner.setOnTouchListener((view, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    downY[0] = event.getRawY();
+                    moved[0] = false;
+                    allowParentsToInterceptTouch(view);
+                    return false;
+                case MotionEvent.ACTION_MOVE:
+                    if (Math.abs(event.getRawY() - downY[0]) > touchSlop) {
+                        moved[0] = true;
+                        view.setPressed(false);
+                        allowParentsToInterceptTouch(view);
+                    }
+                    return moved[0];
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    if (moved[0]) {
+                        moved[0] = false;
+                        view.setPressed(false);
+                        return true;
+                    }
+                    return false;
+                default:
+                    return false;
+            }
+        });
+    }
+
+    private void allowParentsToInterceptTouch(View view) {
+        ViewParent parent = view.getParent();
+        while (parent != null) {
+            parent.requestDisallowInterceptTouchEvent(false);
+            parent = parent.getParent();
+        }
     }
 
     private void loadSensorAssetChoices() {
@@ -422,7 +489,9 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     private void showTab(int selectedIndex) {
         for (int i = 0; i < tabSections.length; i++) {
             tabSections[i].setVisibility(i == selectedIndex ? View.VISIBLE : View.GONE);
-            navButtons[i].setEnabled(i != selectedIndex);
+            navButtons[i].setSelected(i == selectedIndex);
+            navButtons[i].setTextColor(i == selectedIndex ? NAV_TEXT_SELECTED : NAV_TEXT_IDLE);
+            navButtons[i].setTypeface(Typeface.DEFAULT, i == selectedIndex ? Typeface.BOLD : Typeface.NORMAL);
         }
     }
 
