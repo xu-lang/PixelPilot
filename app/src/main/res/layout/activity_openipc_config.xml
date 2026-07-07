@@ -5,30 +5,95 @@
     android:orientation="vertical"
     android:background="@drawable/openipc_bg">
 
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="18dp"
-        android:paddingEnd="18dp"
-        android:paddingTop="14dp"
-        android:paddingBottom="6dp"
-        android:text="OpenIPC Config"
-        android:textColor="@color/openipc_text"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
+        android:minHeight="82dp"
+        android:background="@color/openipc_panel_alt"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
 
-    <TextView
-        android:id="@+id/textStatus"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="2dp"
-        android:paddingBottom="12dp"
-        android:textColor="@color/openipc_text_muted"
-        android:textSize="13sp"
-        android:text="Not connected" />
+        <LinearLayout
+            android:layout_width="220dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/imageOpenIpcLogo"
+                android:layout_width="176dp"
+                android:layout_height="50dp"
+                android:adjustViewBounds="true"
+                android:clickable="true"
+                android:contentDescription="OpenIPC"
+                android:focusable="true"
+                android:scaleType="fitStart"
+                android:src="@drawable/openipc_logo" />
+
+            <Space android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/textStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/openipc_text_muted"
+                android:textSize="11sp"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:text="Not connected" />
+        </LinearLayout>
+
+        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical|end"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="170dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/OpenIpcOutput"
+                    android:layout_width="76dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:text="SOC:\nSensor:\nNet Card:"
+                    android:textSize="13sp" />
+
+                <TextView
+                    style="@style/OpenIpcOutput"
+                    android:id="@+id/textDeviceInfo"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:gravity="start"
+                    android:maxLines="3"
+                    android:textSize="13sp"
+                    android:textIsSelectable="true" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+                    <EditText style="@style/OpenIpcHeaderEditText" android:id="@+id/editHost" android:layout_width="170dp" android:layout_height="wrap_content" android:hint="Camera IP" android:inputType="textUri" />
+                    <EditText style="@style/OpenIpcHeaderEditText" android:id="@+id/editPort" android:layout_width="72dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:hint="Port" android:inputType="number" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:gravity="center_vertical" android:orientation="horizontal">
+                    <EditText style="@style/OpenIpcHeaderEditText" android:id="@+id/editUsername" android:layout_width="120dp" android:layout_height="wrap_content" android:hint="User" />
+                    <EditText style="@style/OpenIpcHeaderEditText" android:id="@+id/editPassword" android:layout_width="122dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:hint="Password" android:inputType="textPassword" />
+                </LinearLayout>
+            </LinearLayout>
+            <Button style="@style/OpenIpcHeaderButton" android:id="@+id/btnConnect" android:layout_width="90dp" android:layout_height="match_parent" android:layout_marginStart="10dp" android:layout_marginTop="4dp" android:layout_marginBottom="4dp" android:singleLine="true" android:text="Connect" />
+        </LinearLayout>
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -37,7 +102,7 @@
         android:orientation="horizontal">
 
         <ScrollView
-            android:layout_width="152dp"
+            android:layout_width="160dp"
             android:layout_height="match_parent"
             android:background="@color/openipc_panel"
             android:fillViewport="true">
@@ -51,14 +116,13 @@
                 android:paddingTop="10dp"
                 android:paddingBottom="10dp">
 
-                <Button style="@style/OpenIpcNavButton" android:id="@+id/navConnect" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Connect" />
-                <Button style="@style/OpenIpcNavButton" android:id="@+id/navCamera" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Camera" />
-                <Button style="@style/OpenIpcNavButton" android:id="@+id/navWfb" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="WFB" />
-                <Button style="@style/OpenIpcNavButton" android:id="@+id/navTelemetry" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Telemetry" />
-                <Button style="@style/OpenIpcNavButton" android:id="@+id/navSetup" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Setup" />
-                <Button style="@style/OpenIpcNavButton" android:id="@+id/navAdvanced" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Advanced" />
-                <Button style="@style/OpenIpcNavButton" android:id="@+id/navFirmware" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Firmware" />
-                <Button style="@style/OpenIpcNavButton" android:id="@+id/navPrefs" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Preferences" />
+                <Button style="@style/OpenIpcNavButton" android:id="@+id/navCamera" android:layout_width="match_parent" android:layout_height="wrap_content" android:drawableStart="@drawable/openipc_tab_camera" android:text="Camera" />
+                <Button style="@style/OpenIpcNavButton" android:id="@+id/navWfb" android:layout_width="match_parent" android:layout_height="wrap_content" android:drawableStart="@drawable/openipc_tab_wifi" android:text="WFB" />
+                <Button style="@style/OpenIpcNavButton" android:id="@+id/navTelemetry" android:layout_width="match_parent" android:layout_height="wrap_content" android:drawableStart="@drawable/openipc_tab_telemetry" android:text="Telemetry" />
+                <Button style="@style/OpenIpcNavButton" android:id="@+id/navSetup" android:layout_width="match_parent" android:layout_height="wrap_content" android:drawableStart="@drawable/openipc_tab_settings" android:text="Setup" />
+                <Button style="@style/OpenIpcNavButton" android:id="@+id/navAdvanced" android:layout_width="match_parent" android:layout_height="wrap_content" android:drawableStart="@drawable/openipc_tab_advanced" android:text="Advanced" />
+                <Button style="@style/OpenIpcNavButton" android:id="@+id/navFirmware" android:layout_width="match_parent" android:layout_height="wrap_content" android:drawableStart="@drawable/openipc_tab_firmware" android:text="Firmware" />
+                <Button style="@style/OpenIpcNavButton" android:id="@+id/navPrefs" android:layout_width="match_parent" android:layout_height="wrap_content" android:drawableStart="@drawable/openipc_tab_settings" android:text="Preferences" />
             </LinearLayout>
         </ScrollView>
 
@@ -68,6 +132,7 @@
             android:background="@color/openipc_stroke" />
 
         <ScrollView
+            android:id="@+id/openIpcContentScroll"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -84,99 +149,38 @@
             android:padding="16dp">
 
             <LinearLayout
-                android:id="@+id/sectionConnection"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <EditText
-                    style="@style/OpenIpcEditText"
-                    android:id="@+id/editHost"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Camera IP"
-                    android:inputType="textUri" />
-
-                <EditText
-                    style="@style/OpenIpcEditText"
-                    android:id="@+id/editPort"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="SSH port"
-                    android:inputType="number" />
-
-                <EditText
-                    style="@style/OpenIpcEditText"
-                    android:id="@+id/editUsername"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Username" />
-
-                <EditText
-                    style="@style/OpenIpcEditText"
-                    android:id="@+id/editPassword"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Password"
-                    android:inputType="textPassword" />
-
-                <Button
-                    style="@style/OpenIpcButton"
-                    android:id="@+id/btnConnect"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Connect &amp; Read" />
-
-                <TextView
-                    style="@style/OpenIpcOutput"
-                    android:id="@+id/textDeviceInfo"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingTop="8dp"
-                    android:textIsSelectable="true" />
-            </LinearLayout>
-
-            <LinearLayout
                 android:id="@+id/sectionCamera"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Resolution" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerResolution" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FPS" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerFps" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Codec" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerCodec" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Bitrate" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerBitrate" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Exposure" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerExposure" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Contrast" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerContrast" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Hue" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerHue" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Saturation" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerSaturation" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Luminance" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerLuminance" android:layout_width="match_parent" android:layout_height="wrap_content" />
-
-                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkFlip" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Flip" />
-                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkMirror" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Mirror" />
-                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkAudio" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Audio enabled" />
-                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkRecord" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Onboard recording" />
-                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkRecordNoTime" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Record no time" />
-
-                <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="FPV" />
-                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkFpvEnabled" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FPV enabled" />
-                <EditText style="@style/OpenIpcEditText" android:id="@+id/editFpvNoiseLevel" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="FPV noiseLevel" />
-                <EditText style="@style/OpenIpcEditText" android:id="@+id/editFpvRoiQp" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="FPV roiQp" />
-                <EditText style="@style/OpenIpcEditText" android:id="@+id/editFpvRefEnhance" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="FPV refEnhance" />
-                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkFpvRefPred" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FPV refPred" />
-                <EditText style="@style/OpenIpcEditText" android:id="@+id/editFpvIntraLine" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="FPV intraLine" />
-                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkFpvIntraQp" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FPV intraQp" />
-                <EditText style="@style/OpenIpcEditText" android:id="@+id/editFpvRoiRect" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="FPV roiRect, LeftxTopxHxW" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:paddingEnd="10dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="104dp" android:layout_height="wrap_content" android:text="Resolution" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><Spinner style="@style/OpenIpcCameraSpinner" android:id="@+id/spinnerResolution" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="104dp" android:layout_height="wrap_content" android:text="FPS" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><Spinner style="@style/OpenIpcCameraSpinner" android:id="@+id/spinnerFps" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="104dp" android:layout_height="wrap_content" android:text="Codec" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><Spinner style="@style/OpenIpcCameraSpinner" android:id="@+id/spinnerCodec" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="104dp" android:layout_height="wrap_content" android:text="Bitrate" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><Spinner style="@style/OpenIpcCameraSpinner" android:id="@+id/spinnerBitrate" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="104dp" android:layout_height="wrap_content" android:text="Exposure" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><Spinner style="@style/OpenIpcCameraSpinner" android:id="@+id/spinnerExposure" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="104dp" android:layout_height="wrap_content" android:text="Contrast" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><Spinner style="@style/OpenIpcCameraSpinner" android:id="@+id/spinnerContrast" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="104dp" android:layout_height="wrap_content" android:text="Hue" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><Spinner style="@style/OpenIpcCameraSpinner" android:id="@+id/spinnerHue" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="104dp" android:layout_height="wrap_content" android:text="Saturation" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><Spinner style="@style/OpenIpcCameraSpinner" android:id="@+id/spinnerSaturation" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="104dp" android:layout_height="wrap_content" android:text="Luminance" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><Spinner style="@style/OpenIpcCameraSpinner" android:id="@+id/spinnerLuminance" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><CheckBox style="@style/OpenIpcInlineCheckBox" android:id="@+id/checkFlip" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Flip" /><CheckBox style="@style/OpenIpcInlineCheckBox" android:id="@+id/checkMirror" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_weight="1" android:text="Mirror" /></LinearLayout>
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:paddingStart="10dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="126dp" android:layout_height="wrap_content" android:text="FPV Enabled" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><CheckBox style="@style/OpenIpcInlineCheckBox" android:id="@+id/checkFpvEnabled" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="126dp" android:layout_height="wrap_content" android:text="FPV Noise Level" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><EditText style="@style/OpenIpcCameraEditText" android:id="@+id/editFpvNoiseLevel" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="126dp" android:layout_height="wrap_content" android:text="FPV roiQp" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><EditText style="@style/OpenIpcCameraEditText" android:id="@+id/editFpvRoiQp" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="126dp" android:layout_height="wrap_content" android:text="FPV refEnhance" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><EditText style="@style/OpenIpcCameraEditText" android:id="@+id/editFpvRefEnhance" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="126dp" android:layout_height="wrap_content" android:text="FPV refPred" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><CheckBox style="@style/OpenIpcInlineCheckBox" android:id="@+id/checkFpvRefPred" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="126dp" android:layout_height="wrap_content" android:text="FPV intraLine" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><EditText style="@style/OpenIpcCameraEditText" android:id="@+id/editFpvIntraLine" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="126dp" android:layout_height="wrap_content" android:text="FPV intraQp" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><CheckBox style="@style/OpenIpcInlineCheckBox" android:id="@+id/checkFpvIntraQp" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:layout_width="126dp" android:layout_height="wrap_content" android:text="FPV roiRect" android:textColor="@color/openipc_text_muted" android:textSize="12sp" /><EditText style="@style/OpenIpcCameraEditText" android:id="@+id/editFpvRoiRect" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:hint="LeftxTopxHxW" /></LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal"><CheckBox style="@style/OpenIpcInlineCheckBox" android:id="@+id/checkRecord" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Onboard recording" /><CheckBox style="@style/OpenIpcInlineCheckBox" android:id="@+id/checkRecordNoTime" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_weight="1" android:text="Record no time" /></LinearLayout>
+                        <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkAudio" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Audio enabled" />
+                    </LinearLayout>
+                </LinearLayout>
 
                 <Button
                     style="@style/OpenIpcButton"
@@ -186,13 +190,20 @@
                     android:enabled="false"
                     android:text="Save &amp; Restart Majestic" />
 
-                <TextView
-                    style="@style/OpenIpcOutput"
-                    android:id="@+id/textMajesticPreview"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingTop="8dp"
-                    android:textIsSelectable="true" />
+                <LinearLayout android:id="@+id/rawCameraConfigPanel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                    <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Raw config" />
+                    <EditText
+                        style="@style/OpenIpcEditText"
+                        android:id="@+id/textMajesticPreview"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="top|start"
+                        android:hint="/etc/majestic.yaml"
+                        android:inputType="textMultiLine"
+                        android:minLines="12"
+                        android:paddingTop="8dp"
+                        android:textIsSelectable="true" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -204,26 +215,50 @@
 
                 <Button style="@style/OpenIpcButton" android:id="@+id/btnReadWfb" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Read WFB Config" />
 
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Channel" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerWfbChannel" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:id="@+id/textWfbTxPower" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="TX Power: 0" />
-                <SeekBar android:id="@+id/seekWfbTxPower" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="60" android:progressTint="@color/openipc_slider_progress" android:progressBackgroundTint="@color/openipc_stroke" android:thumbTint="@color/openipc_slider_progress" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Bandwidth" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerWfbBandwidth" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MCS" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerWfbMcs" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FEC K" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerWfbFecK" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FEC N" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerWfbFecN" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MLink" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerWfbMlink" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkWfbStbc" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="STBC" />
-                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkWfbLdpc" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="LDPC" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal">
+                        <TextView android:layout_width="104dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="Frequency" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerWfbChannel" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal">
+                        <TextView android:id="@+id/textWfbTxPower" android:layout_width="104dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="TX Power: 0" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <SeekBar android:id="@+id/seekWfbTxPower" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:max="60" android:progressTint="@color/openipc_slider_progress" android:progressBackgroundTint="@color/openipc_stroke" android:thumbTint="@color/openipc_slider_progress" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal">
+                        <TextView android:layout_width="104dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="MCS" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerWfbMcs" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal">
+                        <TextView android:layout_width="104dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="FEC K" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerWfbFecK" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal">
+                        <TextView android:layout_width="104dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="FEC N" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerWfbFecN" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal">
+                        <TextView android:layout_width="104dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="STBC" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <CheckBox style="@style/OpenIpcInlineCheckBox" android:id="@+id/checkWfbStbc" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal">
+                        <TextView android:layout_width="104dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="LDPC" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <CheckBox style="@style/OpenIpcInlineCheckBox" android:id="@+id/checkWfbLdpc" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal">
+                        <TextView android:layout_width="104dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="Bandwidth" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerWfbBandwidth" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal">
+                        <TextView android:layout_width="104dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="MLink" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerWfbMlink" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                    </LinearLayout>
+                </LinearLayout>
 
-                <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Raw config" />
-                <EditText style="@style/OpenIpcEditText" android:id="@+id/editWfbConfig" android:layout_width="match_parent" android:layout_height="360dp" android:gravity="top|start" android:hint="/etc/wfb.yaml or /etc/wfb.conf" android:inputType="textMultiLine" android:textIsSelectable="true" />
                 <Button style="@style/OpenIpcButton" android:id="@+id/btnSaveWfb" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Save &amp; Restart WFB" />
+                <LinearLayout android:id="@+id/rawWfbConfigPanel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                    <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Raw config" />
+                    <EditText style="@style/OpenIpcEditText" android:id="@+id/editWfbConfig" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="top|start" android:hint="/etc/wfb.yaml or /etc/wfb.conf" android:inputType="textMultiLine" android:minLines="10" android:textIsSelectable="true" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -234,30 +269,113 @@
                 android:visibility="gone">
 
                 <Button style="@style/OpenIpcButton" android:id="@+id/btnReadTelemetry" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Read Telemetry Config" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Serial Port" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerTelemetrySerial" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Baud Rate" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerTelemetryBaud" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Router" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerTelemetryRouter" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MSP FPS" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerTelemetryMspFps" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MCS Index" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerTelemetryMcs" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Aggregate" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerTelemetryAggregate" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="RC Channel" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerTelemetryRcChannel" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnEnableUart0" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Enable UART0" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnDisableUart0" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Disable UART0" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnEnable40Mhz" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Enable 40MHz" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnAddMavlink" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Add MAVLINK" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnMsposdCameraExtra" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MSPOSD Camera Extra" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnMsposdGsExtra" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MSPOSD GS Extra" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnRemoveMsposdExtra" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Remove MSPOSD Extra" />
-                <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Raw config" />
-                <EditText style="@style/OpenIpcEditText" android:id="@+id/editTelemetryConfig" android:layout_width="match_parent" android:layout_height="320dp" android:gravity="top|start" android:hint="/etc/telemetry.conf" android:inputType="textMultiLine" android:textIsSelectable="true" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnSaveTelemetry" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Save &amp; Restart Telemetry" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="56dp"
+                        android:orientation="horizontal">
+
+                        <TextView android:layout_width="92dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="Serial Port" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerTelemetrySerial" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                        <Button style="@style/OpenIpcInlineButton" android:id="@+id/btnEnableUart0" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:text="Enable UART0" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="56dp"
+                        android:orientation="horizontal">
+
+                        <TextView android:layout_width="92dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="Baud Rate" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerTelemetryBaud" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                        <Button style="@style/OpenIpcInlineButton" android:id="@+id/btnDisableUart0" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:text="Disable UART0" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="56dp"
+                        android:orientation="horizontal">
+
+                        <TextView android:layout_width="92dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="Router" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerTelemetryRouter" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                        <Button style="@style/OpenIpcInlineButton" android:id="@+id/btnAddMavlink" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:text="Add MAVLINK" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="56dp"
+                        android:orientation="horizontal">
+
+                        <TextView android:layout_width="92dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="MSP FPS" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerTelemetryMspFps" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                        <Button style="@style/OpenIpcInlineButton" android:id="@+id/btnEnable40Mhz" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:text="Enable 40MHz" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="56dp"
+                        android:orientation="horizontal">
+
+                        <TextView android:layout_width="92dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="MCS Index" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerTelemetryMcs" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                        <Button style="@style/OpenIpcInlineButton" android:id="@+id/btnMsposdCameraExtra" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:text="MSPOSD Camera Extra" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="56dp"
+                        android:orientation="horizontal">
+
+                        <TextView android:layout_width="92dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="Aggregate" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerTelemetryAggregate" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                        <Button style="@style/OpenIpcInlineButton" android:id="@+id/btnMsposdGsExtra" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:text="MSPOSD GS Extra" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="56dp"
+                        android:orientation="horizontal">
+
+                        <TextView android:layout_width="92dp" android:layout_height="match_parent" android:gravity="center_vertical" android:includeFontPadding="false" android:text="RC Channel" android:textColor="@color/openipc_text_muted" android:textSize="12sp" />
+                        <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerTelemetryRcChannel" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                        <Button style="@style/OpenIpcInlineButton" android:id="@+id/btnRemoveMsposdExtra" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:text="Remove MSPOSD Extra" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="68dp"
+                        android:orientation="horizontal"
+                        android:paddingBottom="12dp">
+
+                        <Button style="@style/OpenIpcButton" android:id="@+id/btnSaveTelemetry" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginBottom="4dp" android:layout_weight="1" android:text="Save &amp; Restart Telemetry" />
+                        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_marginStart="16dp" android:layout_weight="1" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/rawTelemetryConfigPanel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                    <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Raw config" />
+                    <EditText style="@style/OpenIpcEditText" android:id="@+id/editTelemetryConfig" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="top|start" android:hint="/etc/telemetry.conf" android:inputType="textMultiLine" android:minLines="12" android:textIsSelectable="true" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -267,16 +385,58 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Camera Sensors" />
-                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerSensorBin" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnUploadApplySensorBin" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Upload selected sensor &amp; restart Majestic" />
-                <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Advanced sensor path" />
-                <EditText style="@style/OpenIpcEditText" android:id="@+id/editSensorConfigPath" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Sensor path, e.g. /etc/sensors/imx415_fpv.bin" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnApplySensorPath" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Apply Sensor Path &amp; Restart Majestic" />
-                <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Key Management" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnGetDroneKeyChecksum" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Get drone.key checksum" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnDownloadDroneKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Download drone.key to app cache" />
-                <TextView style="@style/OpenIpcOutput" android:id="@+id/textSetupInfo" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:textIsSelectable="true" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/setupConfigPanel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingEnd="10dp"
+                        android:visibility="gone">
+
+                        <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Key Management" />
+                        <Button style="@style/OpenIpcButton" android:id="@+id/btnGetDroneKeyChecksum" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Get drone.key checksum" />
+                        <Button style="@style/OpenIpcButton" android:id="@+id/btnDownloadDroneKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Download drone.key to app cache" />
+
+                        <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Camera Sensors" />
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="56dp" android:orientation="horizontal">
+                            <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerSensorBin" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                            <Button style="@style/OpenIpcButton" android:id="@+id/btnUploadApplySensorBin" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:text="Apply" />
+                        </LinearLayout>
+
+                        <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Advanced sensor path" />
+                        <EditText style="@style/OpenIpcEditText" android:id="@+id/editSensorConfigPath" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Sensor path, e.g. /etc/sensors/imx415_fpv.bin" />
+                        <Button style="@style/OpenIpcButton" android:id="@+id/btnApplySensorPath" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Apply Sensor Path &amp; Restart Majestic" />
+
+                        <TextView style="@style/OpenIpcOutput" android:id="@+id/textSetupInfo" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:textIsSelectable="true" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/setupScanPanel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingStart="10dp">
+
+                        <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Network Scan" />
+                        <TextView style="@style/OpenIpcOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:text="1. Type the IP subnet to scan, e.g. 192.168.0. or 192.168.\n2. Press SCAN.\n3. Wait for Scan completed. Do not touch anything until finished." />
+                        <EditText style="@style/OpenIpcEditText" android:id="@+id/editSetupScanSubnet" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Scan subnet, e.g. 192.168.1." android:inputType="text" />
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="56dp" android:orientation="horizontal">
+                            <Button style="@style/OpenIpcButton" android:id="@+id/btnScanSetupNetwork" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="SCAN" />
+                            <Button style="@style/OpenIpcButton" android:id="@+id/btnCancelSetupScan" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_weight="1" android:text="CANCEL" />
+                        </LinearLayout>
+                        <TextView style="@style/OpenIpcOutput" android:id="@+id/textSetupScanStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:text="Ready to scan." />
+                        <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Available IP Addresses on your network:" />
+                        <TextView style="@style/OpenIpcOutput" android:id="@+id/textSetupScanResults" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:textIsSelectable="true" />
+                        <TextView style="@style/OpenIpcOutput" android:id="@+id/textSetupLocalIp" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:text="Local IP: Unknown" />
+                    </LinearLayout>
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -286,12 +446,20 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnCheckAlink" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Check alink_drone" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnEnableAlink" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Enable alink_drone" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnDisableAlink" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Disable alink_drone" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnSystemReport" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Generate system report" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnViewSystemLogs" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="View system logs" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnNetworkDiagnostics" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Network diagnostics" />
+                <TextView style="@style/OpenIpcOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="This tab contains various experimental and advanced features." />
+
+                <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Adaptive Link" />
+                <TextView style="@style/OpenIpcOutput" android:id="@+id/textAdaptiveLinkStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:text="Adaptive Link status not checked." android:textIsSelectable="true" />
+                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkAlinkDroneOnBoot" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Alink Drone on Boot" />
+                <Button style="@style/OpenIpcButton" android:id="@+id/btnCheckAdaptiveLinkStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Check Installation Status" />
+
+                <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Debug Tools" />
+                <TextView style="@style/OpenIpcOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Advanced debugging tools and system diagnostics." />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="56dp" android:orientation="horizontal">
+                    <Button style="@style/OpenIpcButton" android:id="@+id/btnSystemReport" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Generate system report" />
+                    <Button style="@style/OpenIpcButton" android:id="@+id/btnViewSystemLogs" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:text="View system logs" />
+                    <Button style="@style/OpenIpcButton" android:id="@+id/btnNetworkDiagnostics" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:text="Network diagnostics" />
+                </LinearLayout>
                 <TextView style="@style/OpenIpcOutput" android:id="@+id/textAdvancedOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:textIsSelectable="true" />
             </LinearLayout>
 
@@ -302,9 +470,81 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <TextView style="@style/OpenIpcOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Firmware operations are intentionally not enabled yet. Companion's firmware tab performs backup, restore, bootloader replacement, sysupgrade, reboot detection, and SSH recovery. These operations need a dedicated safe Android flow before enabling." android:textIsSelectable="true" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnFirmwareStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Read firmware/device status" />
-                <TextView style="@style/OpenIpcOutput" android:id="@+id/textFirmwareOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:textIsSelectable="true" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="8dp" android:background="@drawable/openipc_firmware_section_shell" android:orientation="vertical">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/openipc_firmware_section_header" android:text="Backup / Restore" android:textColor="@android:color/white" android:textStyle="bold" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="8dp" android:background="@drawable/openipc_firmware_card" android:orientation="vertical">
+                        <TextView style="@style/OpenIpcSubTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Backup firmware partitions from the device" />
+                        <TextView style="@style/OpenIpcOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="This runs on the device over SSH, reads /proc/mtd, creates MTD dumps under /tmp, generates SHA-256 checksums, archives the backup, and then prompts you to save the completed archive locally." />
+                        <Button style="@style/OpenIpcButton" android:id="@+id/btnFirmwareBackup" android:layout_width="220dp" android:layout_height="wrap_content" android:text="Create Backup" />
+                        <TextView style="@style/OpenIpcOutput" android:id="@+id/textFirmwareBackupProgress" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="6dp" android:textIsSelectable="true" />
+                        <ProgressBar android:id="@+id/progressFirmwareBackup" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="16dp" android:layout_marginTop="8dp" android:max="100" android:progress="0" android:progressTint="#4C61D8" android:progressBackgroundTint="@color/openipc_stroke" />
+                        <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="18dp" android:layout_marginBottom="14dp" android:background="@color/openipc_stroke" />
+                        <TextView style="@style/OpenIpcSubTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Restore firmware partitions to the device" />
+                        <TextView style="@style/OpenIpcOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="Select a backup archive created by this tool. Each MTD partition will be uploaded and flashed back to the device, then the device will reboot." />
+                        <TextView style="@style/OpenIpcWarning" android:id="@+id/textFirmwareRestoreWarning" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="Warning: Restoring firmware will overwrite all flash partitions including bootloader, kernel, and rootfs. A power failure or incorrect backup can permanently brick the device." />
+                        <EditText style="@style/OpenIpcEditText" android:id="@+id/editFirmwareRestorePath" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Local backup path in app cache" />
+                        <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkFirmwareRestoreConfirm" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="I accept the risk of permanently bricking this device." />
+                        <Button style="@style/OpenIpcButton" android:id="@+id/btnFirmwareRestore" android:layout_width="220dp" android:layout_height="wrap_content" android:enabled="false" android:text="Restore from Backup" />
+                        <TextView style="@style/OpenIpcOutput" android:id="@+id/textFirmwareRestoreProgress" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="6dp" android:textIsSelectable="true" />
+                        <ProgressBar android:id="@+id/progressFirmwareRestore" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="16dp" android:layout_marginTop="8dp" android:max="100" android:progress="0" android:progressTint="#4C61D8" android:progressBackgroundTint="@color/openipc_stroke" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="8dp" android:background="@drawable/openipc_firmware_section_shell" android:orientation="vertical">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/openipc_firmware_section_header" android:text="Bootloader" android:textColor="@android:color/white" android:textStyle="bold" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="8dp" android:background="@drawable/openipc_firmware_card" android:orientation="vertical">
+                        <TextView style="@style/OpenIpcSubTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Replace bootloader from Linux" />
+                        <TextView style="@style/OpenIpcOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="Select the correct bootloader for your SoC, confirm, then download, upload, and flash it on the device." />
+                        <TextView style="@style/OpenIpcWarning" android:id="@+id/textFirmwareBootloaderWarning" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="Warning: Replacing the bootloader can permanently brick the device. Proceed only if you accept the risk." />
+                        <EditText style="@style/OpenIpcEditText" android:id="@+id/editFirmwareBootloaderUrl" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Bootloader URL" android:inputType="textUri" />
+                        <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkFirmwareBootloaderConfirm" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="I accept the risk of bricking this device. This will overwrite /dev/mtd0 and erase /dev/mtd1." />
+                        <Button style="@style/OpenIpcButton" android:id="@+id/btnFirmwareBootloader" android:layout_width="220dp" android:layout_height="wrap_content" android:enabled="false" android:text="Replace Bootloader" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="8dp" android:background="@drawable/openipc_firmware_section_shell" android:orientation="vertical">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/openipc_firmware_section_header" android:text="Firmware" android:textColor="@android:color/white" android:textStyle="bold" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="8dp" android:background="@drawable/openipc_firmware_card" android:orientation="vertical">
+                        <TextView style="@style/OpenIpcOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/openipc_firmware_notice" android:text="Select a firmware source below. Choose one method — the selected card will highlight." />
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="56dp" android:orientation="horizontal">
+                            <TextView style="@style/OpenIpcLabel" android:layout_width="120dp" android:layout_height="wrap_content" android:text="Firmware Source" />
+                            <Spinner style="@style/OpenIpcFirmwareSpinner" android:id="@+id/spinnerFirmwareSource" android:layout_width="220dp" android:layout_height="wrap_content" />
+                        </LinearLayout>
+                        <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="8dp" android:layout_marginBottom="12dp" android:background="@color/openipc_stroke" />
+                        <LinearLayout android:id="@+id/cardFirmwareMethodAutomatic" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp" android:background="@drawable/openipc_firmware_method_card" android:orientation="vertical">
+                            <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkFirmwareMethodAutomatic" android:layout_width="match_parent" android:layout_height="wrap_content" android:checked="true" android:text="Automatic — by manufacturer" />
+                            <LinearLayout android:id="@+id/panelFirmwareAutomatic" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="40dp" android:orientation="horizontal"><TextView style="@style/OpenIpcLabel" android:layout_width="120dp" android:layout_height="wrap_content" android:text="Manufacturer" /><Spinner style="@style/OpenIpcFirmwareSpinner" android:id="@+id/spinnerFirmwareManufacturer" android:layout_width="220dp" android:layout_height="wrap_content" /></LinearLayout>
+                                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="40dp" android:orientation="horizontal"><TextView style="@style/OpenIpcLabel" android:layout_width="120dp" android:layout_height="wrap_content" android:text="Device" /><Spinner style="@style/OpenIpcFirmwareSpinner" android:id="@+id/spinnerFirmwareDevice" android:layout_width="220dp" android:layout_height="wrap_content" /></LinearLayout>
+                                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="40dp" android:orientation="horizontal"><TextView style="@style/OpenIpcLabel" android:layout_width="120dp" android:layout_height="wrap_content" android:text="WFB/Ruby" /><Spinner style="@style/OpenIpcFirmwareSpinner" android:id="@+id/spinnerFirmwareWfbRuby" android:layout_width="220dp" android:layout_height="wrap_content" /></LinearLayout>
+                            </LinearLayout>
+                        </LinearLayout>
+                        <LinearLayout android:id="@+id/cardFirmwareMethodBySoc" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp" android:background="@drawable/openipc_firmware_method_card" android:orientation="vertical">
+                            <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkFirmwareMethodBySoc" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Select by SoC" />
+                            <LinearLayout android:id="@+id/panelFirmwareBySoc" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="40dp" android:orientation="horizontal" android:visibility="gone"><TextView style="@style/OpenIpcLabel" android:layout_width="120dp" android:layout_height="wrap_content" android:text="Select Firmware" /><Spinner style="@style/OpenIpcFirmwareSpinner" android:id="@+id/spinnerFirmwareBySoc" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" /></LinearLayout>
+                        </LinearLayout>
+                        <LinearLayout android:id="@+id/cardFirmwareMethodLocal" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp" android:background="@drawable/openipc_firmware_method_card" android:orientation="vertical">
+                            <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkFirmwareMethodLocal" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Local file" />
+                            <LinearLayout android:id="@+id/panelFirmwareLocal" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="56dp" android:orientation="horizontal" android:visibility="gone">
+                                <TextView style="@style/OpenIpcLabel" android:layout_width="80dp" android:layout_height="wrap_content" android:text="Local" />
+                                <EditText style="@style/OpenIpcEditText" android:id="@+id/editFirmwareLocalPackage" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:enabled="false" android:hint="Local firmware package" />
+                                <Button style="@style/OpenIpcButton" android:id="@+id/btnFirmwareSelectLocalPackage" android:layout_width="64dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="..." />
+                            </LinearLayout>
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="56dp" android:orientation="horizontal">
+                            <Button style="@style/OpenIpcSecondaryButton" android:id="@+id/btnFirmwareClear" android:layout_width="100dp" android:layout_height="wrap_content" android:text="Clear" />
+                            <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+                            <Button style="@style/OpenIpcButton" android:id="@+id/btnFirmwareUpdate" android:layout_width="100dp" android:layout_height="wrap_content" android:text="Update" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="8dp" android:background="@drawable/openipc_firmware_card" android:orientation="vertical">
+                    <TextView style="@style/OpenIpcSubTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Firmware Upgrade Progress" />
+                    <ProgressBar android:id="@+id/progressFirmwareUpdate" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:max="100" android:progress="0" android:progressTint="#4C61D8" android:progressBackgroundTint="@color/openipc_stroke" />
+                    <Button style="@style/OpenIpcButton" android:id="@+id/btnFirmwareStatus" android:layout_width="220dp" android:layout_height="wrap_content" android:text="Read firmware/device status" />
+                    <TextView style="@style/OpenIpcOutput" android:id="@+id/textFirmwareOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:textIsSelectable="true" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -314,9 +554,25 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkRememberOpenIpcPassword" android:layout_width="match_parent" android:layout_height="wrap_content" android:checked="true" android:text="Remember OpenIPC password" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnClearOpenIpcSettings" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Clear saved OpenIPC settings" />
-                <Button style="@style/OpenIpcButton" android:id="@+id/btnShowLocalLogHint" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Show log location hint" />
+                <TextView style="@style/OpenIpcOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Application preferences are stored locally and applied across OpenIPC configuration screens." />
+                <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="General" />
+                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkUpdatesOnStartup" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Check for updates on startup" />
+                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkFirmwareFocusedMode" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Firmware focused mode" />
+                <TextView style="@style/OpenIpcOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="When enabled in Companion: WFB, Camera, Telemetry, and Setup are hidden for camera workflows, and camera connections land on Firmware." />
+                <TextView style="@style/OpenIpcLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Preferred firmware source" />
+                <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerPreferredFirmwareSource" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="OpenIPC Android" />
+                <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkShowRawConfigs" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Show raw config editors" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="56dp" android:orientation="horizontal">
+                    <CheckBox style="@style/OpenIpcCheckBox" android:id="@+id/checkRememberOpenIpcPassword" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:checked="true" android:text="Remember OpenIPC password" />
+                    <Button style="@style/OpenIpcButton" android:id="@+id/btnClearOpenIpcSettings" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:text="Clear saved OpenIPC settings" />
+                </LinearLayout>
+                <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Debug Tools" />
+                <TextView style="@style/OpenIpcOutput" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Advanced debugging tools and system diagnostics." />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="56dp" android:orientation="horizontal">
+                    <Button style="@style/OpenIpcButton" android:id="@+id/btnPreferencesDeviceInfo" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Get Device Info" />
+                    <Button style="@style/OpenIpcButton" android:id="@+id/btnShowLocalLogHint" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:text="Show log location hint" />
+                </LinearLayout>
                 <TextView style="@style/OpenIpcOutput" android:id="@+id/textPreferencesInfo" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:textIsSelectable="true" />
             </LinearLayout>
         </FrameLayout>

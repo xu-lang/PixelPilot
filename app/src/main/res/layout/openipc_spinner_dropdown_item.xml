@@ -6,5 +6,7 @@
     android:paddingStart="12dp"
     android:paddingEnd="12dp"
     android:background="@color/openipc_panel_alt"
+    android:singleLine="true"
+    android:ellipsize="end"
     android:textColor="@color/openipc_text"
     android:textSize="14sp" />

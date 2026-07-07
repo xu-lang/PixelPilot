@@ -1,9 +1,12 @@
 package com.openipc.pixelpilot;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -20,12 +23,19 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 
 import com.hierynomus.sshj.transport.cipher.BlockCiphers;
 import com.hierynomus.sshj.transport.kex.DHGroups;
@@ -39,17 +49,32 @@ import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
 
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.Socket;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -68,11 +93,17 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     private static final String ALINK_STATUS = "grep -q \"alink_drone\" /etc/rc.local && echo \"true\" || echo \"false\"";
     private static final String ALINK_ENABLE = "grep -q \"alink_drone\" /etc/rc.local || sed -i '/^exit 0/i # Start alink drone service\\n/usr/bin/alink_drone \\&\\n' /etc/rc.local";
     private static final String ALINK_DISABLE = "sed -i '/# Start alink drone service/d; /alink_drone/d; /^$/d' /etc/rc.local";
+    private static final String OPENIPC_BUILDER_RELEASE_API = "https://api.github.com/repos/OpenIPC/builder/releases/latest";
+    private static final String GREG_APFPV_CONTENTS_API = "https://api.github.com/repos/sickgreg/OpenIPC_sickgregFPV_apfpv/contents";
+    private static final String OPENIPC_LOG_PREFIX = "openipc_config";
+    private static final long OPENIPC_LOG_MAX_BYTES = 10L * 1024L * 1024L;
+    private static final int OPENIPC_LOG_MAX_FILES = 5;
     private static final int NAV_TEXT_SELECTED = Color.WHITE;
     private static final int NAV_TEXT_IDLE = Color.rgb(154, 170, 182);
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private ActivityResultLauncher<Intent> firmwarePackagePicker;
 
     private EditText editHost;
     private EditText editPort;
@@ -105,11 +136,21 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     private Spinner spinnerTelemetryMcs;
     private Spinner spinnerTelemetryAggregate;
     private Spinner spinnerTelemetryRcChannel;
+    private Spinner spinnerPreferredFirmwareSource;
+    private Spinner spinnerFirmwareSource;
+    private Spinner spinnerFirmwareManufacturer;
+    private Spinner spinnerFirmwareDevice;
+    private Spinner spinnerFirmwareWfbRuby;
+    private Spinner spinnerFirmwareBySoc;
     private Spinner spinnerSensorBin;
     private SeekBar seekWfbTxPower;
     private EditText editWfbConfig;
     private EditText editTelemetryConfig;
     private EditText editSensorConfigPath;
+    private EditText editSetupScanSubnet;
+    private EditText editFirmwareRestorePath;
+    private EditText editFirmwareBootloaderUrl;
+    private EditText editFirmwareLocalPackage;
     private CheckBox checkFlip;
     private CheckBox checkMirror;
     private CheckBox checkAudio;
@@ -120,36 +161,84 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     private CheckBox checkFpvIntraQp;
     private CheckBox checkWfbStbc;
     private CheckBox checkWfbLdpc;
+    private CheckBox checkAlinkDroneOnBoot;
+    private CheckBox checkUpdatesOnStartup;
+    private CheckBox checkFirmwareFocusedMode;
+    private CheckBox checkRememberOpenIpcPassword;
+    private CheckBox checkShowRawConfigs;
+    private CheckBox checkFirmwareRestoreConfirm;
+    private CheckBox checkFirmwareBootloaderConfirm;
+    private CheckBox checkFirmwareMethodAutomatic;
+    private CheckBox checkFirmwareMethodBySoc;
+    private CheckBox checkFirmwareMethodLocal;
     private TextView textStatus;
     private TextView textDeviceInfo;
-    private TextView textMajesticPreview;
+    private EditText textMajesticPreview;
     private TextView textWfbTxPower;
     private TextView textSetupInfo;
+    private TextView textSetupScanStatus;
+    private TextView textSetupScanResults;
+    private TextView textSetupLocalIp;
+    private TextView textAdaptiveLinkStatus;
     private TextView textAdvancedOutput;
     private TextView textFirmwareOutput;
+    private TextView textFirmwareBackupProgress;
+    private TextView textFirmwareRestoreProgress;
     private TextView textPreferencesInfo;
     private Button btnSaveMajestic;
+    private Button btnFirmwareRestore;
+    private Button btnFirmwareBootloader;
+    private Button btnFirmwareUpdate;
+    private ScrollView openIpcContentScroll;
+    private ProgressBar progressFirmwareBackup;
+    private ProgressBar progressFirmwareRestore;
+    private ProgressBar progressFirmwareUpdate;
+    private View cardFirmwareMethodAutomatic;
+    private View cardFirmwareMethodBySoc;
+    private View cardFirmwareMethodLocal;
+    private View panelFirmwareAutomatic;
+    private View panelFirmwareBySoc;
+    private View panelFirmwareLocal;
+    private View rawCameraConfigPanel;
+    private View rawWfbConfigPanel;
+    private View rawTelemetryConfigPanel;
+    private View setupConfigPanel;
+    private volatile boolean cancelSetupScan;
     private Button[] navButtons;
+    private int[] navIconRes;
     private View[] tabSections;
 
     private Map<String, Object> majesticConfig;
     private Map<String, Object> wfbYamlConfig;
+    private final Map<String, Map<String, Map<String, String>>> automaticFirmwareChoices = new LinkedHashMap<>();
     private String activeWfbPath = REMOTE_WFB_YAML;
     private boolean telemetryUsesWfbYaml = false;
+    private boolean rawCameraConfigEditing = false;
+    private boolean rawWfbConfigEditing = false;
+    private boolean rawTelemetryConfigEditing = false;
+    private String connectedSoc = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_openipc_config);
+        firmwarePackagePicker = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
+                cacheSelectedFirmwarePackage(result.getData().getData());
+            }
+        });
 
         bindViews();
         setupChoiceControls();
+        setupRawConfigEditors();
         setupEditTextBehavior(findViewById(android.R.id.content));
         applyOpenIpcTextColors(findViewById(android.R.id.content));
         loadConnectionSettings();
         setupTabs();
 
+        findViewById(R.id.imageOpenIpcLogo).setOnClickListener(v -> showOpenIpcAboutDialog());
         findViewById(R.id.btnConnect).setOnClickListener(v -> connectAndRead());
+        textStatus.setOnClickListener(v -> showOpenIpcLogs());
         btnSaveMajestic.setOnClickListener(v -> saveAndRestartMajestic());
         findViewById(R.id.btnReadWfb).setOnClickListener(v -> readWfbConfig());
         findViewById(R.id.btnSaveWfb).setOnClickListener(v -> saveWfbConfig());
@@ -166,15 +255,80 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         findViewById(R.id.btnUploadApplySensorBin).setOnClickListener(v -> uploadAndApplySelectedSensorBin());
         findViewById(R.id.btnGetDroneKeyChecksum).setOnClickListener(v -> getDroneKeyChecksum());
         findViewById(R.id.btnDownloadDroneKey).setOnClickListener(v -> downloadDroneKey());
-        findViewById(R.id.btnCheckAlink).setOnClickListener(v -> runCommandWithToast(ALINK_STATUS, "alink_drone"));
-        findViewById(R.id.btnEnableAlink).setOnClickListener(v -> runCommandWithToast(ALINK_ENABLE, "alink_drone enabled"));
-        findViewById(R.id.btnDisableAlink).setOnClickListener(v -> runCommandWithToast(ALINK_DISABLE, "alink_drone disabled"));
-        findViewById(R.id.btnSystemReport).setOnClickListener(v -> runCommandToOutput("hostname; uname -a; uptime; df -h; free; ps", textAdvancedOutput, "Generating report..."));
-        findViewById(R.id.btnViewSystemLogs).setOnClickListener(v -> runCommandToOutput("logread | tail -n 120", textAdvancedOutput, "Reading logs..."));
-        findViewById(R.id.btnNetworkDiagnostics).setOnClickListener(v -> runCommandToOutput("ip addr; ip route; iw dev 2>/dev/null; lsusb", textAdvancedOutput, "Running diagnostics..."));
+        findViewById(R.id.btnScanSetupNetwork).setOnClickListener(v -> scanSetupNetwork());
+        findViewById(R.id.btnCancelSetupScan).setOnClickListener(v -> cancelSetupScan = true);
+        findViewById(R.id.btnCheckAdaptiveLinkStatus).setOnClickListener(v -> checkAdaptiveLinkStatus());
+        checkAlinkDroneOnBoot.setOnClickListener(v -> setAlinkDroneOnBoot(checkAlinkDroneOnBoot.isChecked()));
+        findViewById(R.id.btnSystemReport).setOnClickListener(v -> runCommandToOutput("echo '=== System Information ==='; uname -a; echo '=== CPU Info ==='; cat /proc/cpuinfo | grep -i 'model name\\|processor'; echo '=== Memory Info ==='; free -h; echo '=== Disk Usage ==='; df -h; echo '=== Network Interfaces ==='; ip addr; echo '=== Loaded Modules ==='; lsmod 2>/dev/null || echo 'lsmod not available'; echo '=== OpenIPC Configurations ==='; for f in /etc/os-release /etc/majestic.yaml /etc/wfb.yaml /etc/wfb.conf /etc/telemetry.conf /etc/alink.conf /etc/vtxmenu.ini /etc/txprofiles.conf /etc/datalink.conf; do echo \"--- $f ---\"; cat $f 2>/dev/null || echo 'File not found'; done", textAdvancedOutput, "Generating report..."));
+        findViewById(R.id.btnViewSystemLogs).setOnClickListener(v -> runCommandToOutput("echo '=== Journal Logs (Last 100 Entries) ==='; journalctl -n 100 2>/dev/null || echo 'journalctl not available'; echo; echo '=== OpenIPC logread Output ==='; logread 2>/dev/null || echo 'logread command not available'", textAdvancedOutput, "Reading logs..."));
+        findViewById(R.id.btnNetworkDiagnostics).setOnClickListener(v -> runCommandToOutput("echo '=== Network Interfaces ==='; ip addr; echo '=== Routes ==='; ip route; echo '=== Wireless ==='; iw dev 2>/dev/null || echo 'iw not available'; echo '=== USB ==='; lsusb 2>/dev/null || echo 'lsusb not available'; echo '=== Connection Stats ==='; netstat -tunap 2>/dev/null || ss -tunap 2>/dev/null || echo 'netstat/ss not available'", textAdvancedOutput, "Running diagnostics..."));
         findViewById(R.id.btnFirmwareStatus).setOnClickListener(v -> runCommandToOutput("hostname; fw_printenv soc sensor 2>/dev/null; cat /etc/os-release 2>/dev/null; df -h", textFirmwareOutput, "Reading firmware status..."));
+        findViewById(R.id.btnFirmwareBackup).setOnClickListener(v -> createFirmwareBackup());
+        findViewById(R.id.btnFirmwareRestore).setOnClickListener(v -> restoreFirmwareBackup());
+        findViewById(R.id.btnFirmwareBootloader).setOnClickListener(v -> replaceFirmwareBootloader());
+        findViewById(R.id.btnFirmwareUpdate).setOnClickListener(v -> performFirmwareSysupgrade());
+        findViewById(R.id.btnFirmwareClear).setOnClickListener(v -> clearFirmwareForm());
+        findViewById(R.id.btnFirmwareSelectLocalPackage).setOnClickListener(v -> selectLocalFirmwarePackage());
+        checkFirmwareRestoreConfirm.setOnCheckedChangeListener((buttonView, isChecked) -> btnFirmwareRestore.setEnabled(isChecked));
+        checkFirmwareBootloaderConfirm.setOnCheckedChangeListener((buttonView, isChecked) -> btnFirmwareBootloader.setEnabled(isChecked));
+        checkFirmwareMethodAutomatic.setOnClickListener(v -> selectFirmwareMethod(checkFirmwareMethodAutomatic));
+        checkFirmwareMethodBySoc.setOnClickListener(v -> selectFirmwareMethod(checkFirmwareMethodBySoc));
+        checkFirmwareMethodLocal.setOnClickListener(v -> selectFirmwareMethod(checkFirmwareMethodLocal));
+        cardFirmwareMethodAutomatic.setOnClickListener(v -> selectFirmwareMethod(checkFirmwareMethodAutomatic));
+        cardFirmwareMethodBySoc.setOnClickListener(v -> selectFirmwareMethod(checkFirmwareMethodBySoc));
+        cardFirmwareMethodLocal.setOnClickListener(v -> selectFirmwareMethod(checkFirmwareMethodLocal));
+        spinnerFirmwareManufacturer.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                updateFirmwareDeviceChoices(String.valueOf(parent.getItemAtPosition(position)));
+            }
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {
+            }
+        });
+        spinnerFirmwareDevice.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                updateFirmwarePackageChoices(spinnerValue(spinnerFirmwareManufacturer), String.valueOf(parent.getItemAtPosition(position)));
+            }
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {
+            }
+        });
+        spinnerFirmwareSource.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                loadFirmwareBySocChoices();
+            }
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {
+            }
+        });
         findViewById(R.id.btnClearOpenIpcSettings).setOnClickListener(v -> clearSavedOpenIpcSettings());
+        findViewById(R.id.btnPreferencesDeviceInfo).setOnClickListener(v -> runCommandToOutput("hostname; uname -a; uptime; df -h; free; ps", textPreferencesInfo, "Getting device info..."));
         findViewById(R.id.btnShowLocalLogHint).setOnClickListener(v -> textPreferencesInfo.setText("Android logs are available through logcat. PixelPilot app data is stored under the app sandbox."));
+        checkUpdatesOnStartup.setOnCheckedChangeListener((buttonView, isChecked) -> savePreferenceBoolean("check_updates_on_startup", isChecked));
+        checkFirmwareFocusedMode.setOnCheckedChangeListener((buttonView, isChecked) -> savePreferenceBoolean("firmware_focused_mode", isChecked));
+        checkRememberOpenIpcPassword.setOnCheckedChangeListener((buttonView, isChecked) -> savePreferenceBoolean("remember_openipc_password", isChecked));
+        checkShowRawConfigs.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            savePreferenceBoolean("show_raw_configs", isChecked);
+            updateRawConfigVisibility(isChecked);
+        });
+        spinnerPreferredFirmwareSource.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                        .putString("preferred_firmware_source", spinnerValue(spinnerPreferredFirmwareSource))
+                        .apply();
+            }
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {
+            }
+        });
     }
 
     @Override
@@ -225,11 +379,21 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         spinnerTelemetryMcs = findViewById(R.id.spinnerTelemetryMcs);
         spinnerTelemetryAggregate = findViewById(R.id.spinnerTelemetryAggregate);
         spinnerTelemetryRcChannel = findViewById(R.id.spinnerTelemetryRcChannel);
+        spinnerPreferredFirmwareSource = findViewById(R.id.spinnerPreferredFirmwareSource);
+        spinnerFirmwareSource = findViewById(R.id.spinnerFirmwareSource);
+        spinnerFirmwareManufacturer = findViewById(R.id.spinnerFirmwareManufacturer);
+        spinnerFirmwareDevice = findViewById(R.id.spinnerFirmwareDevice);
+        spinnerFirmwareWfbRuby = findViewById(R.id.spinnerFirmwareWfbRuby);
+        spinnerFirmwareBySoc = findViewById(R.id.spinnerFirmwareBySoc);
         spinnerSensorBin = findViewById(R.id.spinnerSensorBin);
         seekWfbTxPower = findViewById(R.id.seekWfbTxPower);
         editWfbConfig = findViewById(R.id.editWfbConfig);
         editTelemetryConfig = findViewById(R.id.editTelemetryConfig);
         editSensorConfigPath = findViewById(R.id.editSensorConfigPath);
+        editSetupScanSubnet = findViewById(R.id.editSetupScanSubnet);
+        editFirmwareRestorePath = findViewById(R.id.editFirmwareRestorePath);
+        editFirmwareBootloaderUrl = findViewById(R.id.editFirmwareBootloaderUrl);
+        editFirmwareLocalPackage = findViewById(R.id.editFirmwareLocalPackage);
         checkFlip = findViewById(R.id.checkFlip);
         checkMirror = findViewById(R.id.checkMirror);
         checkAudio = findViewById(R.id.checkAudio);
@@ -240,17 +404,49 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         checkFpvIntraQp = findViewById(R.id.checkFpvIntraQp);
         checkWfbStbc = findViewById(R.id.checkWfbStbc);
         checkWfbLdpc = findViewById(R.id.checkWfbLdpc);
+        checkAlinkDroneOnBoot = findViewById(R.id.checkAlinkDroneOnBoot);
+        checkUpdatesOnStartup = findViewById(R.id.checkUpdatesOnStartup);
+        checkFirmwareFocusedMode = findViewById(R.id.checkFirmwareFocusedMode);
+        checkRememberOpenIpcPassword = findViewById(R.id.checkRememberOpenIpcPassword);
+        checkShowRawConfigs = findViewById(R.id.checkShowRawConfigs);
+        checkFirmwareRestoreConfirm = findViewById(R.id.checkFirmwareRestoreConfirm);
+        checkFirmwareBootloaderConfirm = findViewById(R.id.checkFirmwareBootloaderConfirm);
+        checkFirmwareMethodAutomatic = findViewById(R.id.checkFirmwareMethodAutomatic);
+        checkFirmwareMethodBySoc = findViewById(R.id.checkFirmwareMethodBySoc);
+        checkFirmwareMethodLocal = findViewById(R.id.checkFirmwareMethodLocal);
         textStatus = findViewById(R.id.textStatus);
         textDeviceInfo = findViewById(R.id.textDeviceInfo);
         textMajesticPreview = findViewById(R.id.textMajesticPreview);
         textWfbTxPower = findViewById(R.id.textWfbTxPower);
         textSetupInfo = findViewById(R.id.textSetupInfo);
+        textSetupScanStatus = findViewById(R.id.textSetupScanStatus);
+        textSetupScanResults = findViewById(R.id.textSetupScanResults);
+        textSetupLocalIp = findViewById(R.id.textSetupLocalIp);
+        textAdaptiveLinkStatus = findViewById(R.id.textAdaptiveLinkStatus);
         textAdvancedOutput = findViewById(R.id.textAdvancedOutput);
         textFirmwareOutput = findViewById(R.id.textFirmwareOutput);
+        textFirmwareBackupProgress = findViewById(R.id.textFirmwareBackupProgress);
+        textFirmwareRestoreProgress = findViewById(R.id.textFirmwareRestoreProgress);
         textPreferencesInfo = findViewById(R.id.textPreferencesInfo);
         btnSaveMajestic = findViewById(R.id.btnSaveMajestic);
+        btnFirmwareRestore = findViewById(R.id.btnFirmwareRestore);
+        btnFirmwareBootloader = findViewById(R.id.btnFirmwareBootloader);
+        btnFirmwareUpdate = findViewById(R.id.btnFirmwareUpdate);
+        openIpcContentScroll = findViewById(R.id.openIpcContentScroll);
+        progressFirmwareBackup = findViewById(R.id.progressFirmwareBackup);
+        progressFirmwareRestore = findViewById(R.id.progressFirmwareRestore);
+        progressFirmwareUpdate = findViewById(R.id.progressFirmwareUpdate);
+        cardFirmwareMethodAutomatic = findViewById(R.id.cardFirmwareMethodAutomatic);
+        cardFirmwareMethodBySoc = findViewById(R.id.cardFirmwareMethodBySoc);
+        cardFirmwareMethodLocal = findViewById(R.id.cardFirmwareMethodLocal);
+        panelFirmwareAutomatic = findViewById(R.id.panelFirmwareAutomatic);
+        panelFirmwareBySoc = findViewById(R.id.panelFirmwareBySoc);
+        panelFirmwareLocal = findViewById(R.id.panelFirmwareLocal);
+        rawCameraConfigPanel = findViewById(R.id.rawCameraConfigPanel);
+        rawWfbConfigPanel = findViewById(R.id.rawWfbConfigPanel);
+        rawTelemetryConfigPanel = findViewById(R.id.rawTelemetryConfigPanel);
+        setupConfigPanel = findViewById(R.id.setupConfigPanel);
         tabSections = new View[]{
-                findViewById(R.id.sectionConnection),
                 findViewById(R.id.sectionCamera),
                 findViewById(R.id.sectionWfb),
                 findViewById(R.id.sectionTelemetry),
@@ -260,7 +456,6 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
                 findViewById(R.id.sectionPreferences)
         };
         navButtons = new Button[]{
-                findViewById(R.id.navConnect),
                 findViewById(R.id.navCamera),
                 findViewById(R.id.navWfb),
                 findViewById(R.id.navTelemetry),
@@ -268,6 +463,15 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
                 findViewById(R.id.navAdvanced),
                 findViewById(R.id.navFirmware),
                 findViewById(R.id.navPrefs)
+        };
+        navIconRes = new int[]{
+                R.drawable.openipc_tab_camera,
+                R.drawable.openipc_tab_wifi,
+                R.drawable.openipc_tab_telemetry,
+                R.drawable.openipc_tab_settings,
+                R.drawable.openipc_tab_advanced,
+                R.drawable.openipc_tab_firmware,
+                R.drawable.openipc_tab_settings
         };
     }
 
@@ -297,7 +501,17 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         setSpinnerItems(spinnerTelemetryMcs, rangeStrings(0, 9, 1));
         setSpinnerItems(spinnerTelemetryAggregate, "0", "1", "2", "4", "6", "8", "10", "12", "14", "15");
         setSpinnerItems(spinnerTelemetryRcChannel, rangeStrings(0, 8, 1));
+        setSpinnerItems(spinnerPreferredFirmwareSource, "OpenIPC", "OpenIPC FPV", "Custom/Local");
+        setSpinnerItems(spinnerFirmwareSource, "OpenIPC Builder", "Greg APFPV");
+        setSpinnerItems(spinnerFirmwareManufacturer, "");
+        setSpinnerItems(spinnerFirmwareDevice, "");
+        setSpinnerItems(spinnerFirmwareWfbRuby, "");
+        setSpinnerItems(spinnerFirmwareBySoc, "");
         loadSensorAssetChoices();
+        updateSetupScannerDefaults();
+        updateSetupStage(false);
+        updateFirmwareMethodPanels();
+        loadPreferencesSettings();
         seekWfbTxPower.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -320,7 +534,12 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
             boolean isMultiLine = (editText.getInputType() & android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE) != 0;
             if (!isMultiLine) {
                 editText.setSingleLine(true);
-                editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+                editText.setImeOptions((editText.getImeOptions()
+                        & ~EditorInfo.IME_MASK_ACTION
+                        & ~EditorInfo.IME_FLAG_NAVIGATE_NEXT
+                        & ~EditorInfo.IME_FLAG_NAVIGATE_PREVIOUS)
+                        | EditorInfo.IME_ACTION_DONE
+                        | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
                 editText.setOnEditorActionListener((v, actionId, event) -> {
                     boolean isDone = actionId == EditorInfo.IME_ACTION_DONE;
                     boolean isEnter = event != null
@@ -344,6 +563,224 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         }
     }
 
+    private void setupRawConfigEditors() {
+        setupRawConfigEditor(textMajesticPreview, "Camera", () -> rawCameraConfigEditing = true);
+        setupRawConfigEditor(editWfbConfig, "WFB", () -> rawWfbConfigEditing = true);
+        setupRawConfigEditor(editTelemetryConfig, "Telemetry", () -> rawTelemetryConfigEditing = true);
+        setRawConfigEditing(textMajesticPreview, false);
+        setRawConfigEditing(editWfbConfig, false);
+        setRawConfigEditing(editTelemetryConfig, false);
+    }
+
+    private void setupRawConfigEditor(EditText editor, String label, Runnable onConfirmed) {
+        editor.setOnClickListener(v -> {
+            if (!editor.isFocusableInTouchMode()) {
+                Toast.makeText(this, "Long press to enter raw config edit mode", Toast.LENGTH_SHORT).show();
+            }
+        });
+        editor.setOnLongClickListener(v -> {
+            showRawConfigEditWarning(editor, label, onConfirmed);
+            return true;
+        });
+    }
+
+    private void showOpenIpcAboutDialog() {
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setBackgroundResource(R.drawable.openipc_log_dialog_bg);
+        container.setPadding(dp(18), dp(16), dp(18), dp(16));
+
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.drawable.openipc_logo);
+        logo.setAdjustViewBounds(true);
+        logo.setScaleType(ImageView.ScaleType.FIT_START);
+        container.addView(logo, new LinearLayout.LayoutParams(dp(150), dp(42)));
+
+        TextView version = new TextView(this);
+        version.setText("PixelPilot " + appVersionName() + "\nOpenIPC Config");
+        version.setTextColor(getColor(R.color.openipc_text_muted));
+        version.setTextSize(12);
+        version.setLineSpacing(dp(2), 1.0f);
+        LinearLayout.LayoutParams versionParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        versionParams.setMargins(0, dp(8), 0, dp(14));
+        container.addView(version, versionParams);
+
+        container.addView(aboutLinkRow(R.drawable.openipc_about_github, "GitHub", "https://github.com/OpenIPC/"));
+        container.addView(aboutLinkRow(R.drawable.openipc_about_telegram, "Telegram", "https://t.me/+BMyMoolVOpkzNWUy"));
+        container.addView(aboutLinkRow(R.drawable.openipc_about_discord, "Discord", "https://discord.gg/KtWgDV6Y"));
+
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setGravity(android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.END);
+        buttons.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams buttonsParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        buttonsParams.setMargins(0, dp(14), 0, 0);
+        container.addView(buttons, buttonsParams);
+
+        Button closeButton = new Button(this);
+        closeButton.setText("Close");
+        closeButton.setTextColor(getColor(R.color.openipc_button_text));
+        closeButton.setTextSize(11);
+        closeButton.setAllCaps(false);
+        closeButton.setBackgroundResource(R.drawable.openipc_primary_button);
+        closeButton.setBackgroundTintList(null);
+        closeButton.setMinWidth(0);
+        closeButton.setMinHeight(0);
+        closeButton.setPadding(dp(10), 0, dp(10), 0);
+        buttons.addView(closeButton, new LinearLayout.LayoutParams(dp(78), dp(34)));
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(container)
+                .create();
+        closeButton.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+    }
+
+    private View aboutLinkRow(int iconRes, String title, String url) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setPadding(dp(10), dp(8), dp(10), dp(8));
+        row.setOnClickListener(v -> openUrl(url));
+
+        ImageView icon = new ImageView(this);
+        icon.setImageResource(iconRes);
+        row.addView(icon, new LinearLayout.LayoutParams(dp(22), dp(22)));
+
+        TextView text = new TextView(this);
+        text.setText(title + "\n" + url);
+        text.setTextColor(getColor(R.color.openipc_text));
+        text.setTextSize(12);
+        text.setLineSpacing(dp(2), 1.0f);
+        LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        textParams.setMargins(dp(12), 0, 0, 0);
+        row.addView(text, textParams);
+        return row;
+    }
+
+    private String appVersionName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    private void openUrl(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (Exception e) {
+            Toast.makeText(this, "Unable to open link", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showRawConfigEditWarning(EditText editor, String label, Runnable onConfirmed) {
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setBackgroundResource(R.drawable.openipc_log_dialog_bg);
+        container.setPadding(dp(18), dp(16), dp(18), dp(16));
+
+        TextView title = new TextView(this);
+        title.setText("Raw config editing");
+        title.setTextColor(getColor(R.color.openipc_text));
+        title.setTextSize(18);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        container.addView(title, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        TextView message = new TextView(this);
+        message.setText("If you do not understand the configuration file syntax, do not use raw file editing. Confirm only if you know what you are doing.");
+        message.setTextColor(getColor(R.color.openipc_text_muted));
+        message.setTextSize(13);
+        message.setLineSpacing(dp(2), 1.0f);
+        LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        messageParams.setMargins(0, dp(8), 0, dp(16));
+        container.addView(message, messageParams);
+
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setGravity(android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.END);
+        buttons.setOrientation(LinearLayout.HORIZONTAL);
+        container.addView(buttons, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        Button backButton = new Button(this);
+        backButton.setText("Back");
+        backButton.setTextColor(getColor(R.color.openipc_text_muted));
+        backButton.setTextSize(11);
+        backButton.setAllCaps(false);
+        backButton.setBackgroundResource(R.drawable.openipc_secondary_button);
+        backButton.setBackgroundTintList(null);
+        backButton.setMinWidth(0);
+        backButton.setMinHeight(0);
+        backButton.setPadding(dp(10), 0, dp(10), 0);
+        buttons.addView(backButton, new LinearLayout.LayoutParams(dp(78), dp(34)));
+
+        Button confirmButton = new Button(this);
+        confirmButton.setText("Confirm");
+        confirmButton.setTextColor(getColor(R.color.openipc_button_text));
+        confirmButton.setTextSize(11);
+        confirmButton.setAllCaps(false);
+        confirmButton.setBackgroundResource(R.drawable.openipc_primary_button);
+        confirmButton.setBackgroundTintList(null);
+        confirmButton.setMinWidth(0);
+        confirmButton.setMinHeight(0);
+        confirmButton.setPadding(dp(10), 0, dp(10), 0);
+        LinearLayout.LayoutParams confirmParams = new LinearLayout.LayoutParams(dp(92), dp(34));
+        confirmParams.setMargins(dp(8), 0, 0, 0);
+        buttons.addView(confirmButton, confirmParams);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(container)
+                .create();
+        backButton.setOnClickListener(v -> dialog.dismiss());
+        confirmButton.setOnClickListener(v -> {
+            onConfirmed.run();
+            setRawConfigEditing(editor, true);
+            editor.requestFocus();
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.showSoftInput(editor, InputMethodManager.SHOW_IMPLICIT);
+            }
+            Toast.makeText(this, label + " raw config editing enabled", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+    }
+
+    private void setRawConfigEditing(EditText editor, boolean editing) {
+        editor.setFocusable(editing);
+        editor.setFocusableInTouchMode(editing);
+        editor.setCursorVisible(editing);
+        editor.setLongClickable(true);
+        if (!editing) {
+            clearEditFocus(editor);
+        }
+    }
+
+    private void resetRawConfigEditing() {
+        rawCameraConfigEditing = false;
+        rawWfbConfigEditing = false;
+        rawTelemetryConfigEditing = false;
+        setRawConfigEditing(textMajesticPreview, false);
+        setRawConfigEditing(editWfbConfig, false);
+        setRawConfigEditing(editTelemetryConfig, false);
+    }
+
     private void clearEditFocus(View view) {
         view.clearFocus();
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -360,6 +797,10 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     }
 
     private void applyOpenIpcTextColors(View root) {
+        if (root.getId() == R.id.textFirmwareRestoreWarning
+                || root.getId() == R.id.textFirmwareBootloaderWarning) {
+            return;
+        }
         if (root instanceof TextView && !(root instanceof Button) && !(root instanceof EditText)) {
             ((TextView) root).setTextColor(getColor(R.color.openipc_text_muted));
         }
@@ -384,6 +825,10 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         spinner.setOnTouchListener((view, event) -> {
             switch (event.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
+                    if (isFirmwareDeviceDependentSpinner(spinner) && TextUtils.isEmpty(connectedSoc)) {
+                        Toast.makeText(this, "Connect to device first", Toast.LENGTH_SHORT).show();
+                        return true;
+                    }
                     downY[0] = event.getRawY();
                     moved[0] = false;
                     allowParentsToInterceptTouch(view);
@@ -409,6 +854,13 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         });
     }
 
+    private boolean isFirmwareDeviceDependentSpinner(Spinner spinner) {
+        return spinner == spinnerFirmwareManufacturer
+                || spinner == spinnerFirmwareDevice
+                || spinner == spinnerFirmwareWfbRuby
+                || spinner == spinnerFirmwareBySoc;
+    }
+
     private void allowParentsToInterceptTouch(View view) {
         ViewParent parent = view.getParent();
         while (parent != null) {
@@ -430,6 +882,155 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
             setSpinnerItems(spinnerSensorBin, "");
             textStatus.setText("Failed to list bundled sensors: " + e.getMessage());
         }
+    }
+
+    private void loadFirmwareBySocChoices() {
+        String soc = connectedSoc == null ? "" : connectedSoc.trim();
+        if (TextUtils.isEmpty(soc)) {
+            setSpinnerItems(spinnerFirmwareBySoc, "Connect to device first");
+            return;
+        }
+        String source = spinnerValue(spinnerFirmwareSource);
+
+        executor.execute(() -> {
+            try {
+                List<String> names = "Greg APFPV".equals(source)
+                        ? fetchGregApfpvFirmwareNames()
+                        : fetchOpenIpcBuilderFirmwareNames();
+                Map<String, Map<String, Map<String, String>>> automaticChoices = buildAutomaticFirmwareChoices(names, soc);
+                List<String> filtered = new ArrayList<>();
+                String lowerSoc = soc.toLowerCase();
+                for (String name : names) {
+                    String lowerName = name.toLowerCase();
+                    if (lowerName.contains(lowerSoc) && lowerName.contains("fpv") && name.endsWith(".tgz")) {
+                        filtered.add(name);
+                    }
+                }
+                if (filtered.isEmpty()) {
+                    filtered.add("No firmware found for " + soc);
+                }
+                mainHandler.post(() -> {
+                    automaticFirmwareChoices.clear();
+                    automaticFirmwareChoices.putAll(automaticChoices);
+                    updateFirmwareManufacturerChoices();
+                    setSpinnerItems(spinnerFirmwareBySoc, filtered.toArray(new String[0]));
+                });
+            } catch (Exception e) {
+                mainHandler.post(() -> setSpinnerItems(spinnerFirmwareBySoc, "Failed to load firmware list"));
+            }
+        });
+    }
+
+    private List<String> fetchOpenIpcBuilderFirmwareNames() throws Exception {
+        JSONObject json = new JSONObject(readUrl(OPENIPC_BUILDER_RELEASE_API));
+        JSONArray assets = json.optJSONArray("assets");
+        List<String> names = new ArrayList<>();
+        if (assets == null) {
+            return names;
+        }
+        for (int i = 0; i < assets.length(); i++) {
+            String name = assets.getJSONObject(i).optString("name", "");
+            if (!TextUtils.isEmpty(name)) {
+                names.add(name);
+            }
+        }
+        return names;
+    }
+
+    private List<String> fetchGregApfpvFirmwareNames() throws Exception {
+        JSONArray items = new JSONArray(readUrl(GREG_APFPV_CONTENTS_API));
+        List<String> names = new ArrayList<>();
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.getJSONObject(i);
+            String name = item.optString("name", "");
+            if ("file".equals(item.optString("type", "")) && name.endsWith(".tgz")) {
+                names.add(name);
+            }
+        }
+        return names;
+    }
+
+    private Map<String, Map<String, Map<String, String>>> buildAutomaticFirmwareChoices(List<String> names, String soc) {
+        Map<String, Map<String, Map<String, String>>> choices = new LinkedHashMap<>();
+        String lowerSoc = soc.toLowerCase();
+        for (String name : names) {
+            String lowerName = name.toLowerCase();
+            if (!lowerName.startsWith(lowerSoc + "_") || lowerName.contains("rubyfpv")) {
+                continue;
+            }
+            String[] parts = name.split("_", 3);
+            if (parts.length < 3) {
+                continue;
+            }
+            String firmwareType = parts[1];
+            String tail = parts[2];
+            int dash = tail.indexOf('-');
+            if (dash <= 0) {
+                continue;
+            }
+            String manufacturer = tail.substring(0, dash);
+            String deviceAndMemory = tail.substring(dash + 1);
+            int memoryDash = Math.max(deviceAndMemory.lastIndexOf("-nand"), deviceAndMemory.lastIndexOf("-nor"));
+            if (memoryDash <= 0) {
+                continue;
+            }
+            String device = deviceAndMemory.substring(0, memoryDash);
+            choices.computeIfAbsent(manufacturer, key -> new LinkedHashMap<>())
+                    .computeIfAbsent(device, key -> new LinkedHashMap<>())
+                    .put(firmwareType, name);
+        }
+        if (!choices.isEmpty() && "ssc338q".equalsIgnoreCase(soc)) {
+            choices.computeIfAbsent("openipc", key -> new LinkedHashMap<>())
+                    .computeIfAbsent("thinker-aio-wifi", key -> new LinkedHashMap<>())
+                    .put("fpv", "ssc338q_fpv_openipc-thinker-aio-nor.tgz");
+        }
+        return choices;
+    }
+
+    private void updateFirmwareManufacturerChoices() {
+        if (automaticFirmwareChoices.isEmpty()) {
+            setSpinnerItems(spinnerFirmwareManufacturer, "No firmware found");
+            setSpinnerItems(spinnerFirmwareDevice, "");
+            setSpinnerItems(spinnerFirmwareWfbRuby, "");
+            return;
+        }
+        List<String> manufacturers = new ArrayList<>(automaticFirmwareChoices.keySet());
+        Collections.sort(manufacturers);
+        setSpinnerItems(spinnerFirmwareManufacturer, manufacturers.toArray(new String[0]));
+        updateFirmwareDeviceChoices(manufacturers.get(0));
+    }
+
+    private void updateFirmwareDeviceChoices() {
+        updateFirmwareDeviceChoices(spinnerValue(spinnerFirmwareManufacturer));
+    }
+
+    private void updateFirmwareDeviceChoices(String manufacturer) {
+        Map<String, Map<String, String>> devices = automaticFirmwareChoices.get(manufacturer);
+        if (devices == null || devices.isEmpty()) {
+            setSpinnerItems(spinnerFirmwareDevice, "");
+            setSpinnerItems(spinnerFirmwareWfbRuby, "");
+            return;
+        }
+        List<String> deviceNames = new ArrayList<>(devices.keySet());
+        Collections.sort(deviceNames);
+        setSpinnerItems(spinnerFirmwareDevice, deviceNames.toArray(new String[0]));
+        updateFirmwarePackageChoices(manufacturer, deviceNames.get(0));
+    }
+
+    private void updateFirmwarePackageChoices() {
+        updateFirmwarePackageChoices(spinnerValue(spinnerFirmwareManufacturer), spinnerValue(spinnerFirmwareDevice));
+    }
+
+    private void updateFirmwarePackageChoices(String manufacturer, String device) {
+        Map<String, Map<String, String>> devices = automaticFirmwareChoices.get(manufacturer);
+        Map<String, String> packages = devices == null ? null : devices.get(device);
+        if (packages == null || packages.isEmpty()) {
+            setSpinnerItems(spinnerFirmwareWfbRuby, "");
+            return;
+        }
+        List<String> packageNames = new ArrayList<>(packages.keySet());
+        Collections.sort(packageNames);
+        setSpinnerItems(spinnerFirmwareWfbRuby, packageNames.toArray(new String[0]));
     }
 
     private String spinnerValue(Spinner spinner) {
@@ -512,7 +1113,49 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
             navButtons[i].setSelected(i == selectedIndex);
             navButtons[i].setTextColor(i == selectedIndex ? NAV_TEXT_SELECTED : NAV_TEXT_IDLE);
             navButtons[i].setTypeface(Typeface.DEFAULT, i == selectedIndex ? Typeface.BOLD : Typeface.NORMAL);
+            applyNavIcon(navButtons[i], navIconRes[i], i == selectedIndex ? NAV_TEXT_SELECTED : NAV_TEXT_IDLE);
         }
+        if (openIpcContentScroll != null) {
+            openIpcContentScroll.post(() -> openIpcContentScroll.scrollTo(0, 0));
+        }
+    }
+
+    private void applyNavIcon(Button button, int iconRes, int color) {
+        Drawable icon = getDrawable(iconRes);
+        if (icon != null) {
+            icon = icon.mutate();
+            icon.setTint(color);
+        }
+        button.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null);
+        button.setCompoundDrawablePadding(dp(10));
+    }
+
+    private void updateSetupStage(boolean connected) {
+        if (setupConfigPanel != null) {
+            setupConfigPanel.setVisibility(connected ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private String detectWifiCard(String lsusbOutput) {
+        String text = lsusbOutput == null ? "" : lsusbOutput.toLowerCase();
+        if (text.contains("0bda:8812") || text.contains("0bda:881a")
+                || text.contains("0b05:17d2") || text.contains("2357:0101")
+                || text.contains("2604:0012")) {
+            return "88XXau";
+        }
+        if (text.contains("0bda:a81a")) {
+            return "8812eu";
+        }
+        if (text.contains("0bda:f72b") || text.contains("0bda:b733")) {
+            return "8733bu";
+        }
+        if (text.contains("0cf3:9271") || text.contains("040d:3801")) {
+            return "ar9271";
+        }
+        if (text.contains("0bda:c812")) {
+            return "88x2cu";
+        }
+        return "";
     }
 
     private void loadConnectionSettings() {
@@ -520,16 +1163,48 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         editHost.setText(prefs.getString("host", "10.5.0.10"));
         editPort.setText(String.valueOf(prefs.getInt("port", 22)));
         editUsername.setText(prefs.getString("username", "root"));
-        editPassword.setText(prefs.getString("password", "12345"));
+        editPassword.setText(prefs.getBoolean("remember_openipc_password", true) ? prefs.getString("password", "12345") : "");
     }
 
     private void saveConnectionSettings(ConnectionConfig config) {
-        getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+        SharedPreferences prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit()
                 .putString("host", config.host)
                 .putInt("port", config.port)
-                .putString("username", config.username)
-                .putString("password", config.password)
-                .apply();
+                .putString("username", config.username);
+        if (prefs.getBoolean("remember_openipc_password", true)) {
+            editor.putString("password", config.password);
+        } else {
+            editor.remove("password");
+        }
+        editor.apply();
+    }
+
+    private void loadPreferencesSettings() {
+        SharedPreferences prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        checkUpdatesOnStartup.setChecked(prefs.getBoolean("check_updates_on_startup", true));
+        checkFirmwareFocusedMode.setChecked(prefs.getBoolean("firmware_focused_mode", false));
+        checkRememberOpenIpcPassword.setChecked(prefs.getBoolean("remember_openipc_password", true));
+        boolean showRawConfigs = prefs.getBoolean("show_raw_configs", false);
+        checkShowRawConfigs.setChecked(showRawConfigs);
+        updateRawConfigVisibility(showRawConfigs);
+        selectSpinnerValue(spinnerPreferredFirmwareSource, prefs.getString("preferred_firmware_source", "OpenIPC"));
+    }
+
+    private void updateRawConfigVisibility(boolean visible) {
+        int visibility = visible ? View.VISIBLE : View.GONE;
+        rawCameraConfigPanel.setVisibility(visibility);
+        rawWfbConfigPanel.setVisibility(visibility);
+        rawTelemetryConfigPanel.setVisibility(visibility);
+    }
+
+    private void savePreferenceBoolean(String key, boolean value) {
+        SharedPreferences.Editor editor = getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(key, value);
+        if ("remember_openipc_password".equals(key) && !value) {
+            editor.remove("password");
+        }
+        editor.apply();
+        textPreferencesInfo.setText("Preferences are saved automatically.");
     }
 
     private void connectAndRead() {
@@ -546,21 +1221,42 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
                 String hostname = exec(ssh, "hostname -s").trim();
                 String sensor = exec(ssh, "fw_printenv sensor | awk -F= '{print $2}'").trim();
                 String soc = exec(ssh, "fw_printenv soc | awk -F= '{print $2}'").trim();
+                String netCard = detectWifiCard(exec(ssh, "lsusb 2>/dev/null || true"));
                 String wfbYaml = exec(ssh, "test -f /etc/wfb.yaml && echo 'true' || echo 'false'").trim();
                 activeWfbPath = "true".equalsIgnoreCase(wfbYaml) ? REMOTE_WFB_YAML : REMOTE_WFB_CONF;
+                telemetryUsesWfbYaml = "true".equalsIgnoreCase(wfbYaml);
+                connectedSoc = soc;
                 String majestic = downloadText(ssh, REMOTE_MAJESTIC);
+                String wfbContent = downloadText(ssh, activeWfbPath);
+                String telemetryContent = telemetryUsesWfbYaml ? wfbContent : downloadText(ssh, REMOTE_TELEMETRY);
+                String alinkInstalled = exec(ssh, "[ -f /usr/bin/alink_drone ] && echo 'INSTALLED' || echo 'NOT_INSTALLED'").trim();
+                String alinkOnBoot = exec(ssh, ALINK_STATUS).trim();
+                String alinkProcessCount = exec(ssh, "ps | grep alink_drone | grep -v grep | wc -l").trim();
+                String alinkConfig = exec(ssh, "cat /etc/alink.conf 2>/dev/null || echo 'Configuration not found'");
 
                 parseMajestic(majestic);
+                parseWfbConfig(wfbContent);
 
                 mainHandler.post(() -> {
-                    textDeviceInfo.setText("Hostname: " + hostname
-                            + "\nSensor: " + emptyFallback(sensor)
-                            + "\nSoC: " + emptyFallback(soc)
-                            + "\nWFB config: " + activeWfbPath);
+                    resetRawConfigEditing();
+                    textDeviceInfo.setText(emptyFallback(soc)
+                            + "\n" + emptyFallback(sensor)
+                            + "\n" + emptyFallback(netCard));
                     textMajesticPreview.setText(majestic);
+                    editWfbConfig.setText(wfbContent);
+                    editTelemetryConfig.setText(telemetryContent);
                     fillMajesticFields();
+                    fillWfbFields();
+                    fillTelemetryFields(telemetryContent);
+                    checkAlinkDroneOnBoot.setChecked("true".equalsIgnoreCase(alinkOnBoot));
+                    boolean alinkRunning = parseIntOrDefault(alinkProcessCount, 0) > 0;
+                    textAdaptiveLinkStatus.setText("INSTALLED".equals(alinkInstalled)
+                            ? "Adaptive Link is installed and " + (alinkRunning ? "running" : "not running") + ".\n\nConfiguration:\n" + alinkConfig.trim()
+                            : "Adaptive Link is not installed on this device.");
                     btnSaveMajestic.setEnabled(true);
-                    setBusy(false, "Connected. Read " + REMOTE_MAJESTIC);
+                    updateSetupStage(true);
+                    setBusy(false, "Connected. Refreshed OpenIPC tabs.");
+                    loadFirmwareBySocChoices();
                 });
             } catch (Exception e) {
                 postError("Connect/read failed: " + e.getMessage());
@@ -581,6 +1277,8 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
                 String content = downloadText(config, activeWfbPath);
                 parseWfbConfig(content);
                 mainHandler.post(() -> {
+                    rawWfbConfigEditing = false;
+                    setRawConfigEditing(editWfbConfig, false);
                     editWfbConfig.setText(content);
                     fillWfbFields();
                     setBusy(false, "Read " + activeWfbPath);
@@ -596,14 +1294,23 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         if (config == null) {
             return;
         }
-        String content = buildWfbContentForSave();
+        String content;
+        try {
+            content = buildWfbContentForSave();
+        } catch (Exception e) {
+            Toast.makeText(this, "Invalid WFB config: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            return;
+        }
         setBusy(true, "Saving WFB config...");
         executor.execute(() -> {
             try {
                 uploadText(config, activeWfbPath, content);
                 exec(config, WFB_RESTART);
                 mainHandler.post(() -> {
+                    rawWfbConfigEditing = false;
+                    setRawConfigEditing(editWfbConfig, false);
                     editWfbConfig.setText(content);
+                    fillWfbFields();
                     setBusy(false, "Saved and restarted WFB.");
                 });
             } catch (Exception e) {
@@ -631,6 +1338,8 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
                     content = downloadText(config, REMOTE_TELEMETRY);
                 }
                 mainHandler.post(() -> {
+                    rawTelemetryConfigEditing = false;
+                    setRawConfigEditing(editTelemetryConfig, false);
                     editTelemetryConfig.setText(content);
                     fillTelemetryFields(content);
                     setBusy(false, "Read " + (telemetryUsesWfbYaml ? REMOTE_WFB_YAML : REMOTE_TELEMETRY));
@@ -646,7 +1355,13 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         if (config == null) {
             return;
         }
-        String content = buildTelemetryContentForSave();
+        String content;
+        try {
+            content = buildTelemetryContentForSave();
+        } catch (Exception e) {
+            Toast.makeText(this, "Invalid telemetry config: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            return;
+        }
         setBusy(true, "Saving telemetry config...");
         executor.execute(() -> {
             try {
@@ -658,7 +1373,10 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
                     exec(config, TELEMETRY_RESTART);
                 }
                 mainHandler.post(() -> {
+                    rawTelemetryConfigEditing = false;
+                    setRawConfigEditing(editTelemetryConfig, false);
                     editTelemetryConfig.setText(content);
+                    fillTelemetryFields(content);
                     setBusy(false, telemetryUsesWfbYaml ? "Saved telemetry in wfb.yaml and rebooted." : "Saved and restarted telemetry.");
                 });
             } catch (Exception e) {
@@ -763,6 +1481,420 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         });
     }
 
+    private void createFirmwareBackup() {
+        ConnectionConfig config = readConnectionConfig();
+        if (config == null) {
+            return;
+        }
+
+        setBusy(true, "Creating firmware backup...");
+        textFirmwareOutput.setText("Stopping services on device...\n");
+        setFirmwareBackupProgress(5, "Stopping services on device...");
+        executor.execute(() -> {
+            try (SSHClient ssh = openSsh(config)) {
+                String soc = exec(ssh, "fw_printenv soc 2>/dev/null | awk -F= '{print $2}'").trim();
+                if (TextUtils.isEmpty(soc)) {
+                    soc = "unknown-soc";
+                }
+                String stamp = String.valueOf(System.currentTimeMillis());
+                String backupName = "backup-" + soc.replaceAll("[^a-zA-Z0-9._-]", "-") + "-" + stamp;
+                String remoteBase = "/tmp/mtd-backup";
+                String remoteDir = remoteBase + "/" + backupName;
+                String remoteArchive = "/tmp/" + backupName + ".tar.gz";
+
+                exec(ssh, "killall -q -3 majestic; killall -q wfb_tx; killall -q wfb_rx; killall -q msposd; killall -q telemetry_rx; killall -q telemetry_tx; sleep 1; sync; echo 3 > /proc/sys/vm/drop_caches; true", 60);
+                setFirmwareBackupProgress(8, "Preparing backup directory on device...");
+                exec(ssh, "rm -rf " + shellQuote(remoteBase) + " " + shellQuote(remoteArchive) + " && mkdir -p " + shellQuote(remoteDir), 60);
+                setFirmwareBackupProgress(12, "Backing up all MTD partitions on device...");
+                exec(ssh, "for mtd in $(ls /dev/mtdblock*); do dd if=${mtd} of=" + shellQuote(remoteDir) + "/${mtd##/*/}.bin; done", 300);
+                setFirmwareBackupProgress(70, "Syncing and generating checksum file on device...");
+                exec(ssh, "sync && cd " + shellQuote(remoteDir) + " && md5sum mtdblock*.bin > md5sums.txt", 120);
+                setFirmwareBackupProgress(82, "Creating backup archive on device...");
+                exec(ssh, "tar -cf - -C " + shellQuote(remoteBase) + " " + shellQuote(backupName) + " | gzip > " + shellQuote(remoteArchive), 300);
+
+                File target = new File(getCacheDir(), backupName + ".tar.gz");
+                setFirmwareBackupProgress(92, "Downloading backup archive...");
+                ssh.newSCPFileTransfer().download(remoteArchive, target.getAbsolutePath());
+                exec(ssh, "rm -rf " + shellQuote(remoteBase) + " " + shellQuote(remoteArchive));
+
+                mainHandler.post(() -> {
+                    editFirmwareRestorePath.setText(target.getAbsolutePath());
+                    progressFirmwareBackup.setProgress(100);
+                    textFirmwareBackupProgress.setText("Backup saved to " + target.getAbsolutePath());
+                    textFirmwareOutput.setText("Backup saved to:\n" + target.getAbsolutePath());
+                    setBusy(false, "Firmware backup complete.");
+                });
+            } catch (Exception e) {
+                postError("Firmware backup failed: " + e.getMessage());
+            }
+        });
+    }
+
+    private void restoreFirmwareBackup() {
+        if (!checkFirmwareRestoreConfirm.isChecked()) {
+            Toast.makeText(this, "Confirm restore first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String localPath = editFirmwareRestorePath.getText().toString().trim();
+        if (TextUtils.isEmpty(localPath)) {
+            Toast.makeText(this, "Backup path is required", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        File archive = new File(localPath);
+        if (!archive.isFile()) {
+            Toast.makeText(this, "Backup file not found", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        confirmDanger("Restore firmware?", "This will overwrite all MTD flash partitions on the device with data from:\n"
+                + archive.getName()
+                + "\n\nThis is irreversible. A power failure mid-flash can permanently brick the device. Continue?", () -> restoreFirmwareBackupConfirmed(archive));
+    }
+
+    private void restoreFirmwareBackupConfirmed(File archive) {
+        ConnectionConfig config = readConnectionConfig();
+        if (config == null) {
+            return;
+        }
+        setBusy(true, "Restoring firmware backup...");
+        textFirmwareOutput.setText("Extracting backup archive...\n");
+        setFirmwareRestoreProgress(2, "Extracting backup archive...");
+        executor.execute(() -> {
+            try (SSHClient ssh = openSsh(config)) {
+                String remoteArchive = "/tmp/" + archive.getName();
+                setFirmwareRestoreProgress(15, "Uploading " + archive.getName() + "...");
+                ssh.newSCPFileTransfer().upload(archive.getAbsolutePath(), remoteArchive);
+                setFirmwareRestoreProgress(50, "Verifying checksums...");
+                String command = "rm -rf /tmp/mtd-restore && mkdir -p /tmp/mtd-restore"
+                        + " && tar -xzf " + shellQuote(remoteArchive) + " -C /tmp/mtd-restore"
+                        + " && backupdir=$(find /tmp/mtd-restore -mindepth 1 -maxdepth 1 -type d | head -n1)"
+                        + " && cd \"$backupdir\""
+                        + " && md5sum -c md5sums.txt"
+                        + " && for f in mtdblock*.bin; do idx=${f#mtdblock}; idx=${idx%.bin}; [ -e /dev/mtd${idx} ] && flashcp -v \"$f\" /dev/mtd${idx}; done"
+                        + " && sync && reboot";
+                setFirmwareRestoreProgress(75, "Flashing backup partitions...");
+                String output = exec(ssh, command, 600);
+                mainHandler.post(() -> {
+                    progressFirmwareRestore.setProgress(100);
+                    textFirmwareRestoreProgress.setText("Restore complete. Device is rebooting.");
+                    textFirmwareOutput.setText(output + "\nRestore command completed. Device should reboot.");
+                    setBusy(false, "Restore command completed.");
+                });
+            } catch (Exception e) {
+                postError("Firmware restore failed: " + e.getMessage());
+            }
+        });
+    }
+
+    private void replaceFirmwareBootloader() {
+        if (!checkFirmwareBootloaderConfirm.isChecked()) {
+            Toast.makeText(this, "Confirm bootloader first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String url = editFirmwareBootloaderUrl.getText().toString().trim();
+        if (TextUtils.isEmpty(url)) {
+            Toast.makeText(this, "Bootloader URL is required", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        confirmDanger("Replace bootloader?", "This will flash '" + url + "' to /dev/mtd0 and erase /dev/mtd1. Continue?", () -> replaceFirmwareBootloaderConfirmed(url));
+    }
+
+    private void replaceFirmwareBootloaderConfirmed(String url) {
+        ConnectionConfig config = readConnectionConfig();
+        if (config == null) {
+            return;
+        }
+        setBusy(true, "Replacing bootloader...");
+        textFirmwareOutput.setText("Downloading bootloader...\n");
+        executor.execute(() -> {
+            try {
+                String remotePath = "/tmp/android-bootloader.bin";
+                String command = remoteDownloadCommand(url, remotePath)
+                        + " && size=$(wc -c < " + shellQuote(remotePath) + ")"
+                        + " && limit=$(cat /sys/class/mtd/mtd0/size 2>/dev/null || echo 0)"
+                        + " && [ \"$limit\" = 0 -o \"$size\" -le \"$limit\" ]"
+                        + " && flashcp -v " + shellQuote(remotePath) + " /dev/mtd0"
+                        + " && flash_eraseall /dev/mtd1"
+                        + " && sync && reboot";
+                String output = exec(config, command, 600);
+                mainHandler.post(() -> {
+                    textFirmwareOutput.setText(output + "\nBootloader command completed. Device should reboot.");
+                    setBusy(false, "Bootloader command completed.");
+                });
+            } catch (Exception e) {
+                postError("Bootloader replace failed: " + e.getMessage());
+            }
+        });
+    }
+
+    private void performFirmwareSysupgrade() {
+        if (checkFirmwareMethodAutomatic.isChecked()) {
+            String firmwareName = selectedAutomaticFirmwarePackage();
+            if (TextUtils.isEmpty(firmwareName)) {
+                Toast.makeText(this, "Select firmware is required", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            confirmDanger("Start firmware update?", "Starting sysupgrade. Do not unplug the device.", () -> performFirmwareSysupgradeFromUrl(buildFirmwareDownloadUrl(firmwareName)));
+            return;
+        }
+        if (checkFirmwareMethodBySoc.isChecked()) {
+            String firmwareName = spinnerValue(spinnerFirmwareBySoc);
+            if (TextUtils.isEmpty(firmwareName) || !firmwareName.endsWith(".tgz")) {
+                Toast.makeText(this, "Select firmware is required", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            confirmDanger("Start firmware update?", "Starting sysupgrade. Do not unplug the device.", () -> performFirmwareSysupgradeFromUrl(buildFirmwareDownloadUrl(firmwareName)));
+            return;
+        }
+        String packagePath = editFirmwareLocalPackage.getText().toString().trim();
+        if (TextUtils.isEmpty(packagePath)) {
+            Toast.makeText(this, "Local firmware package is required", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        File firmwarePackage = new File(packagePath);
+        if (!firmwarePackage.isFile()) {
+            Toast.makeText(this, "Local firmware package not found", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        confirmDanger("Start firmware update?", "Starting sysupgrade. Do not unplug the device.", () -> performFirmwareSysupgradeConfirmed(firmwarePackage));
+    }
+
+    private String selectedAutomaticFirmwarePackage() {
+        Map<String, Map<String, String>> devices = automaticFirmwareChoices.get(spinnerValue(spinnerFirmwareManufacturer));
+        if (devices == null) {
+            return "";
+        }
+        Map<String, String> packages = devices.get(spinnerValue(spinnerFirmwareDevice));
+        if (packages == null) {
+            return "";
+        }
+        return packages.get(spinnerValue(spinnerFirmwareWfbRuby));
+    }
+
+    private void performFirmwareSysupgradeFromUrl(String url) {
+        setBusy(true, "Downloading firmware...");
+        executor.execute(() -> {
+            String name = url.substring(url.lastIndexOf('/') + 1);
+            if (TextUtils.isEmpty(name)) {
+                name = "firmware-package-" + System.currentTimeMillis() + ".tgz";
+            }
+            File target = new File(getCacheDir(), name.replaceAll("[^a-zA-Z0-9._-]", "-"));
+            try (InputStream inputStream = new URL(url).openStream();
+                 FileOutputStream outputStream = new FileOutputStream(target)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, read);
+                }
+                mainHandler.post(() -> {
+                    editFirmwareLocalPackage.setText(target.getAbsolutePath());
+                    performFirmwareSysupgradeConfirmed(target);
+                });
+            } catch (Exception e) {
+                postError("Download firmware failed: " + e.getMessage());
+            }
+        });
+    }
+
+    private String buildFirmwareDownloadUrl(String firmwareName) {
+        if ("Greg APFPV".equals(spinnerValue(spinnerFirmwareSource))) {
+            return "https://raw.githubusercontent.com/sickgreg/OpenIPC_sickgregFPV_apfpv/main/" + firmwareName;
+        }
+        return "https://github.com/OpenIPC/builder/releases/download/latest/" + firmwareName;
+    }
+
+    private void performFirmwareSysupgradeConfirmed(File firmwarePackage) {
+        ConnectionConfig config = readConnectionConfig();
+        if (config == null) {
+            return;
+        }
+        setBusy(true, "Starting sysupgrade...");
+        textFirmwareOutput.setText("Extracting firmware...\n");
+        progressFirmwareUpdate.setProgress(20);
+        executor.execute(() -> {
+            try (SSHClient ssh = openSsh(config)) {
+                String remotePackage = "/tmp/" + firmwarePackage.getName().replaceAll("[^a-zA-Z0-9._-]", "-");
+                ssh.newSCPFileTransfer().upload(firmwarePackage.getAbsolutePath(), remotePackage);
+                mainHandler.post(() -> progressFirmwareUpdate.setProgress(30));
+                String command = "rm -rf /tmp/android-fw && mkdir -p /tmp/android-fw"
+                        + " && tar -xzf " + shellQuote(remotePackage) + " -C /tmp/android-fw"
+                        + " && kernel=$(find /tmp/android-fw -type f -name 'uImage*' ! -name '*.md5sum' | head -n1)"
+                        + " && rootfs=$(find /tmp/android-fw -type f -name '*rootfs*' ! -name '*.md5sum' | head -n1)"
+                        + " && test -n \"$kernel\" && test -n \"$rootfs\""
+                        + " && nohup sysupgrade --force_ver -n -z --kernel=\"$kernel\" --rootfs=\"$rootfs\""
+                        + " >/tmp/android-sysupgrade.log 2>&1 & echo 'sysupgrade started; monitor /tmp/android-sysupgrade.log until reboot'";
+                String output = exec(ssh, command, 300);
+                mainHandler.post(() -> {
+                    progressFirmwareUpdate.setProgress(40);
+                    textFirmwareOutput.setText(output + "\nDevice should disconnect and reboot if sysupgrade started successfully.");
+                    setBusy(false, "Sysupgrade started.");
+                });
+            } catch (Exception e) {
+                postError("Firmware update failed: " + e.getMessage());
+            }
+        });
+    }
+
+    private void selectLocalFirmwarePackage() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        firmwarePackagePicker.launch(intent);
+    }
+
+    private void cacheSelectedFirmwarePackage(Uri uri) {
+        setBusy(true, "Copying firmware package...");
+        executor.execute(() -> {
+            String name = "firmware-package-" + System.currentTimeMillis() + ".tar.gz";
+            File target = new File(getCacheDir(), name);
+            try (InputStream inputStream = getContentResolver().openInputStream(uri);
+                 FileOutputStream outputStream = new FileOutputStream(target)) {
+                if (inputStream == null) {
+                    throw new IOException("Unable to open selected file");
+                }
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, read);
+                }
+                mainHandler.post(() -> {
+                    editFirmwareLocalPackage.setText(target.getAbsolutePath());
+                    selectFirmwareMethod(checkFirmwareMethodLocal);
+                    setBusy(false, "Firmware package selected.");
+                });
+            } catch (Exception e) {
+                postError("Select firmware package failed: " + e.getMessage());
+            }
+        });
+    }
+
+    private void clearFirmwareForm() {
+        editFirmwareLocalPackage.setText("");
+        editFirmwareBootloaderUrl.setText("");
+        checkFirmwareMethodAutomatic.setChecked(true);
+        checkFirmwareMethodBySoc.setChecked(false);
+        checkFirmwareMethodLocal.setChecked(false);
+        updateFirmwareMethodPanels();
+        checkFirmwareBootloaderConfirm.setChecked(false);
+        checkFirmwareRestoreConfirm.setChecked(false);
+        btnFirmwareBootloader.setEnabled(false);
+        btnFirmwareRestore.setEnabled(false);
+        progressFirmwareBackup.setProgress(0);
+        progressFirmwareRestore.setProgress(0);
+        progressFirmwareUpdate.setProgress(0);
+        textFirmwareBackupProgress.setText("");
+        textFirmwareRestoreProgress.setText("");
+        textFirmwareOutput.setText("");
+    }
+
+    private void setFirmwareBackupProgress(int progress, String text) {
+        mainHandler.post(() -> {
+            progressFirmwareBackup.setProgress(progress);
+            textFirmwareBackupProgress.setText(text);
+        });
+    }
+
+    private void setFirmwareRestoreProgress(int progress, String text) {
+        mainHandler.post(() -> {
+            progressFirmwareRestore.setProgress(progress);
+            textFirmwareRestoreProgress.setText(text);
+        });
+    }
+
+    private void selectFirmwareMethod(CheckBox selected) {
+        checkFirmwareMethodAutomatic.setChecked(selected == checkFirmwareMethodAutomatic);
+        checkFirmwareMethodBySoc.setChecked(selected == checkFirmwareMethodBySoc);
+        checkFirmwareMethodLocal.setChecked(selected == checkFirmwareMethodLocal);
+        updateFirmwareMethodPanels();
+    }
+
+    private void updateFirmwareMethodPanels() {
+        boolean automatic = checkFirmwareMethodAutomatic.isChecked();
+        boolean bySoc = checkFirmwareMethodBySoc.isChecked();
+        boolean local = checkFirmwareMethodLocal.isChecked();
+        cardFirmwareMethodAutomatic.setSelected(automatic);
+        cardFirmwareMethodBySoc.setSelected(bySoc);
+        cardFirmwareMethodLocal.setSelected(local);
+        panelFirmwareAutomatic.setVisibility(automatic ? View.VISIBLE : View.GONE);
+        panelFirmwareBySoc.setVisibility(bySoc ? View.VISIBLE : View.GONE);
+        panelFirmwareLocal.setVisibility(local ? View.VISIBLE : View.GONE);
+    }
+
+    private void confirmDanger(String title, String message, Runnable action) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("Continue", (dialog, which) -> action.run())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private String remoteDownloadCommand(String url, String remotePath) {
+        String quotedUrl = shellQuote(url);
+        String quotedPath = shellQuote(remotePath);
+        return "rm -f " + quotedPath
+                + " && (wget -O " + quotedPath + " " + quotedUrl
+                + " || curl -L -o " + quotedPath + " " + quotedUrl + ")"
+                + " && test -s " + quotedPath;
+    }
+
+    private void checkAdaptiveLinkStatus() {
+        ConnectionConfig config = readConnectionConfig();
+        if (config == null) {
+            return;
+        }
+        setBusy(true, "Checking Adaptive Link status...");
+        executor.execute(() -> {
+            try (SSHClient ssh = openSsh(config)) {
+                String installed = exec(ssh, "[ -f /usr/bin/alink_drone ] && echo 'INSTALLED' || echo 'NOT_INSTALLED'").trim();
+                String onBoot = exec(ssh, ALINK_STATUS).trim();
+                if (!"INSTALLED".equals(installed)) {
+                    mainHandler.post(() -> {
+                        checkAlinkDroneOnBoot.setChecked("true".equalsIgnoreCase(onBoot));
+                        textAdaptiveLinkStatus.setText("Adaptive Link is not installed on this device.");
+                        setBusy(false, "Adaptive Link is not installed.");
+                    });
+                    return;
+                }
+
+                String processCountText = exec(ssh, "ps | grep alink_drone | grep -v grep | wc -l").trim();
+                boolean running = parseIntOrDefault(processCountText, 0) > 0;
+                String alinkConfig = exec(ssh, "cat /etc/alink.conf 2>/dev/null || echo 'Configuration not found'");
+                String status = "Adaptive Link is installed and " + (running ? "running" : "not running")
+                        + ".\n\nConfiguration:\n" + alinkConfig.trim();
+                mainHandler.post(() -> {
+                    checkAlinkDroneOnBoot.setChecked("true".equalsIgnoreCase(onBoot));
+                    textAdaptiveLinkStatus.setText(status);
+                    setBusy(false, "Adaptive Link status checked.");
+                });
+            } catch (Exception e) {
+                postError("Adaptive Link status failed: " + e.getMessage());
+            }
+        });
+    }
+
+    private void setAlinkDroneOnBoot(boolean enabled) {
+        ConnectionConfig config = readConnectionConfig();
+        if (config == null) {
+            checkAlinkDroneOnBoot.setChecked(!enabled);
+            return;
+        }
+        String command = enabled ? ALINK_ENABLE : ALINK_DISABLE;
+        String label = enabled ? "Adaptive Link enabled on boot." : "Adaptive Link disabled on boot.";
+        setBusy(true, label);
+        executor.execute(() -> {
+            try {
+                exec(config, command);
+                mainHandler.post(() -> {
+                    textAdaptiveLinkStatus.setText(label);
+                    setBusy(false, label);
+                });
+            } catch (Exception e) {
+                mainHandler.post(() -> checkAlinkDroneOnBoot.setChecked(!enabled));
+                postError("Toggle Adaptive Link failed: " + e.getMessage());
+            }
+        });
+    }
+
     private void uploadAssetAndRun(String assetPath, String remotePath, String command, String label) {
         ConnectionConfig config = readConnectionConfig();
         if (config == null) {
@@ -788,6 +1920,126 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
                 temp.delete();
             }
         });
+    }
+
+    private void scanSetupNetwork() {
+        String[] hosts = buildScanTargets(editSetupScanSubnet.getText().toString());
+        if (hosts.length == 0) {
+            Toast.makeText(this, "Enter a valid prefix like 192.168., 192.168.1., or a full IP", Toast.LENGTH_LONG).show();
+            return;
+        }
+        int port = parseIntOrDefault(editPort.getText().toString().trim(), 22);
+        cancelSetupScan = false;
+        setBusy(true, "Scanning " + hosts.length + " addresses...");
+        textSetupScanResults.setText("");
+        textSetupScanStatus.setText("Scanning " + hosts.length + " addresses on SSH port " + port + "...");
+        executor.execute(() -> {
+            StringBuilder result = new StringBuilder();
+            for (String candidate : hosts) {
+                if (cancelSetupScan) {
+                    break;
+                }
+                if (isTcpPortOpen(candidate, port, 120)) {
+                    result.append(candidate).append('\n');
+                }
+            }
+            boolean canceled = cancelSetupScan;
+            String output = result.length() == 0 ? "No hosts found." : result.toString().trim();
+            mainHandler.post(() -> {
+                textSetupScanResults.setText(output);
+                textSetupScanStatus.setText(canceled ? "Scan canceled" : "Scan completed");
+                setBusy(false, canceled ? "Scan canceled." : "Scan complete.");
+            });
+        });
+    }
+
+    private String[] buildScanTargets(String input) {
+        if (TextUtils.isEmpty(input)) {
+            return new String[0];
+        }
+        String trimmed = input.trim();
+        while (trimmed.endsWith(".")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        String[] parts = trimmed.split("\\.");
+        if (parts.length < 2 || parts.length > 4) {
+            return new String[0];
+        }
+        for (String part : parts) {
+            int octet = parseIntOrDefault(part, -1);
+            if (octet < 0 || octet > 255) {
+                return new String[0];
+            }
+        }
+        if (parts.length == 4) {
+            return new String[]{trimmed};
+        }
+        if (parts.length == 3) {
+            String prefix = parts[0] + "." + parts[1] + "." + parts[2] + ".";
+            String[] targets = new String[254];
+            for (int i = 1; i <= 254; i++) {
+                targets[i - 1] = prefix + i;
+            }
+            return targets;
+        }
+        String[] targets = new String[256 * 254];
+        int index = 0;
+        String prefix = parts[0] + "." + parts[1] + ".";
+        for (int third = 0; third <= 255; third++) {
+            for (int fourth = 1; fourth <= 254; fourth++) {
+                targets[index++] = prefix + third + "." + fourth;
+            }
+        }
+        return targets;
+    }
+
+    private String defaultScanPrefix() {
+        String localIp = getLocalIpv4Address();
+        String source = TextUtils.isEmpty(localIp) ? editHost.getText().toString().trim() : localIp;
+        int lastDot = source.lastIndexOf('.');
+        if (lastDot > 0) {
+            return source.substring(0, lastDot + 1);
+        }
+        return "192.168.1.";
+    }
+
+    private void updateSetupScannerDefaults() {
+        String localIp = getLocalIpv4Address();
+        textSetupLocalIp.setText(TextUtils.isEmpty(localIp) ? "Local IP: Unknown" : "Local IP: " + localIp);
+        editSetupScanSubnet.setText(defaultScanPrefix());
+    }
+
+    private String getLocalIpv4Address() {
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = interfaces.nextElement();
+                if (!networkInterface.isUp() || networkInterface.isLoopback()) {
+                    continue;
+                }
+                Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    InetAddress address = addresses.nextElement();
+                    if (address instanceof Inet4Address && !address.isLoopbackAddress()) {
+                        String value = address.getHostAddress();
+                        if (!value.startsWith("169.254.")) {
+                            return value;
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return "";
+    }
+
+    private boolean isTcpPortOpen(String host, int port, int timeoutMs) {
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(host, port), timeoutMs);
+            return true;
+        } catch (IOException ignored) {
+            return false;
+        }
     }
 
     private void getDroneKeyChecksum() {
@@ -832,7 +2084,12 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     }
 
     private void clearSavedOpenIpcSettings() {
-        getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply();
+        getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .remove("host")
+                .remove("port")
+                .remove("username")
+                .remove("password")
+                .apply();
         loadConnectionSettings();
         textPreferencesInfo.setText("Saved OpenIPC connection settings cleared.");
     }
@@ -843,8 +2100,19 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
             return;
         }
 
-        updateMajesticFromFields();
-        String yamlText = dumpYaml(majesticConfig);
+        String yamlText;
+        if (rawCameraConfigEditing) {
+            yamlText = textMajesticPreview.getText().toString();
+            try {
+                parseMajestic(yamlText);
+            } catch (Exception e) {
+                Toast.makeText(this, "Invalid majestic YAML: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                return;
+            }
+        } else {
+            updateMajesticFromFields();
+            yamlText = dumpYaml(majesticConfig);
+        }
         setBusy(true, "Uploading majestic.yaml...");
 
         executor.execute(() -> {
@@ -852,7 +2120,10 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
                 uploadText(config, REMOTE_MAJESTIC, yamlText);
                 exec(config, MAJESTIC_RESTART);
                 mainHandler.post(() -> {
+                    rawCameraConfigEditing = false;
+                    setRawConfigEditing(textMajesticPreview, false);
                     textMajesticPreview.setText(yamlText);
+                    fillMajesticFields();
                     setBusy(false, "Saved and restarted majestic.");
                     Toast.makeText(this, "Majestic restarted", Toast.LENGTH_SHORT).show();
                 });
@@ -905,12 +2176,22 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         }
     }
 
+    private String exec(ConnectionConfig config, String command, int timeoutSeconds) throws IOException {
+        try (SSHClient ssh = openSsh(config)) {
+            return exec(ssh, command, timeoutSeconds);
+        }
+    }
+
     private String exec(SSHClient ssh, String command) throws IOException {
+        return exec(ssh, command, 15);
+    }
+
+    private String exec(SSHClient ssh, String command, int timeoutSeconds) throws IOException {
         try (Session session = ssh.startSession()) {
             Session.Command cmd = session.exec(command);
             String output = readStream(cmd.getInputStream());
             String error = readStream(cmd.getErrorStream());
-            cmd.join(15, TimeUnit.SECONDS);
+            cmd.join(timeoutSeconds, TimeUnit.SECONDS);
             Integer status = cmd.getExitStatus();
             if (status != null && status != 0 && !TextUtils.isEmpty(error)) {
                 throw new IOException(error.trim());
@@ -1067,6 +2348,11 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     }
 
     private String buildWfbContentForSave() {
+        if (rawWfbConfigEditing) {
+            String content = editWfbConfig.getText().toString();
+            parseWfbConfig(content);
+            return content;
+        }
         if (REMOTE_WFB_YAML.equals(activeWfbPath)) {
             if (wfbYamlConfig == null) {
                 parseWfbConfig(editWfbConfig.getText().toString());
@@ -1114,6 +2400,13 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     }
 
     private String buildTelemetryContentForSave() {
+        if (rawTelemetryConfigEditing) {
+            String content = editTelemetryConfig.getText().toString();
+            if (telemetryUsesWfbYaml) {
+                parseWfbConfig(content);
+            }
+            return content;
+        }
         if (telemetryUsesWfbYaml) {
             if (wfbYamlConfig == null) {
                 parseWfbConfig(editTelemetryConfig.getText().toString());
@@ -1310,6 +2603,7 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         findViewById(R.id.btnConnect).setEnabled(!busy);
         btnSaveMajestic.setEnabled(!busy && majesticConfig != null);
         textStatus.setText(message);
+        appendOpenIpcLog(message);
     }
 
     private void postError(String message) {
@@ -1321,6 +2615,176 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
 
     private String emptyFallback(String value) {
         return TextUtils.isEmpty(value) ? "unknown" : value;
+    }
+
+    private void appendOpenIpcLog(String message) {
+        executor.execute(() -> {
+            try {
+                rotateOpenIpcLogsIfNeeded();
+                File logFile = openIpcLogFile(0);
+                String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date());
+                String line = timestamp + " - " + message + "\n";
+                try (FileOutputStream outputStream = new FileOutputStream(logFile, true)) {
+                    outputStream.write(line.getBytes(StandardCharsets.UTF_8));
+                }
+            } catch (Exception ignored) {
+            }
+        });
+    }
+
+    private void rotateOpenIpcLogsIfNeeded() {
+        File current = openIpcLogFile(0);
+        if (!current.exists() || current.length() < OPENIPC_LOG_MAX_BYTES) {
+            return;
+        }
+        File oldest = openIpcLogFile(OPENIPC_LOG_MAX_FILES - 1);
+        if (oldest.exists()) {
+            oldest.delete();
+        }
+        for (int i = OPENIPC_LOG_MAX_FILES - 2; i >= 0; i--) {
+            File source = openIpcLogFile(i);
+            if (source.exists()) {
+                source.renameTo(openIpcLogFile(i + 1));
+            }
+        }
+    }
+
+    private File openIpcLogFile(int index) {
+        String name = index == 0 ? OPENIPC_LOG_PREFIX + ".log" : OPENIPC_LOG_PREFIX + "." + index + ".log";
+        return new File(getFilesDir(), name);
+    }
+
+    private void showOpenIpcLogs() {
+        executor.execute(() -> {
+            String logs = readOpenIpcLogs();
+            mainHandler.post(() -> {
+                LinearLayout container = new LinearLayout(this);
+                container.setOrientation(LinearLayout.VERTICAL);
+                container.setBackgroundResource(R.drawable.openipc_log_dialog_bg);
+                container.setPadding(18, 16, 18, 16);
+
+                TextView title = new TextView(this);
+                title.setText("OpenIPC Logs");
+                title.setTextColor(getColor(R.color.openipc_text));
+                title.setTextSize(18);
+                title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+                container.addView(title, new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT));
+
+                TextView subtitle = new TextView(this);
+                subtitle.setText("Last 5 files, 10 MB each. Tap and hold text to copy.");
+                subtitle.setTextColor(getColor(R.color.openipc_text_muted));
+                subtitle.setTextSize(12);
+                LinearLayout.LayoutParams subtitleParams = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT);
+                subtitleParams.setMargins(0, 4, 0, 12);
+                container.addView(subtitle, subtitleParams);
+
+                TextView textView = new TextView(this);
+                textView.setText(TextUtils.isEmpty(logs) ? "No OpenIPC logs yet." : logs);
+                textView.setTextColor(getColor(R.color.openipc_text));
+                textView.setTextSize(12);
+                textView.setTypeface(Typeface.MONOSPACE);
+                textView.setTextIsSelectable(true);
+                textView.setPadding(12, 10, 12, 10);
+                textView.setBackgroundResource(R.drawable.openipc_log_area);
+
+                ScrollView scrollView = new ScrollView(this);
+                scrollView.setFillViewport(false);
+                scrollView.addView(textView);
+                LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        (int) (getResources().getDisplayMetrics().heightPixels * 0.55f));
+                container.addView(scrollView, scrollParams);
+
+                LinearLayout buttons = new LinearLayout(this);
+                buttons.setGravity(android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.END);
+                buttons.setOrientation(LinearLayout.HORIZONTAL);
+                LinearLayout.LayoutParams buttonsParams = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT);
+                buttonsParams.setMargins(0, 14, 0, 0);
+                container.addView(buttons, buttonsParams);
+
+                Button clearButton = new Button(this);
+                clearButton.setText("Clear");
+                clearButton.setTextColor(getColor(R.color.openipc_text_muted));
+                clearButton.setTextSize(11);
+                clearButton.setAllCaps(false);
+                clearButton.setBackgroundResource(R.drawable.openipc_secondary_button);
+                clearButton.setBackgroundTintList(null);
+                clearButton.setTextColor(getColor(R.color.openipc_text_muted));
+                clearButton.setMinWidth(0);
+                clearButton.setMinHeight(0);
+                clearButton.setPadding(dp(10), 0, dp(10), 0);
+                buttons.addView(clearButton, new LinearLayout.LayoutParams(dp(72), dp(34)));
+
+                Button closeButton = new Button(this);
+                closeButton.setText("Close");
+                closeButton.setTextColor(getColor(R.color.openipc_button_text));
+                closeButton.setTextSize(11);
+                closeButton.setAllCaps(false);
+                closeButton.setBackgroundResource(R.drawable.openipc_primary_button);
+                closeButton.setBackgroundTintList(null);
+                closeButton.setTextColor(getColor(R.color.openipc_button_text));
+                closeButton.setMinWidth(0);
+                closeButton.setMinHeight(0);
+                closeButton.setPadding(dp(10), 0, dp(10), 0);
+                LinearLayout.LayoutParams closeParams = new LinearLayout.LayoutParams(dp(78), dp(34));
+                closeParams.setMargins(dp(8), 0, 0, 0);
+                buttons.addView(closeButton, closeParams);
+
+                AlertDialog dialog = new AlertDialog.Builder(this)
+                        .setView(container)
+                        .create();
+                clearButton.setOnClickListener(v -> {
+                    clearOpenIpcLogs();
+                    dialog.dismiss();
+                });
+                closeButton.setOnClickListener(v -> dialog.dismiss());
+                dialog.show();
+                if (dialog.getWindow() != null) {
+                    dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+                }
+            });
+        });
+    }
+
+    private void clearOpenIpcLogs() {
+        executor.execute(() -> {
+            for (int i = 0; i < OPENIPC_LOG_MAX_FILES; i++) {
+                File file = openIpcLogFile(i);
+                if (file.exists()) {
+                    file.delete();
+                }
+            }
+            mainHandler.post(() -> Toast.makeText(this, "OpenIPC logs cleared", Toast.LENGTH_SHORT).show());
+        });
+    }
+
+    private int dp(int value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    private String readOpenIpcLogs() {
+        StringBuilder builder = new StringBuilder();
+        for (int i = OPENIPC_LOG_MAX_FILES - 1; i >= 0; i--) {
+            File file = openIpcLogFile(i);
+            if (!file.exists()) {
+                continue;
+            }
+            try {
+                if (builder.length() > 0) {
+                    builder.append('\n');
+                }
+                builder.append("--- ").append(file.getName()).append(" ---\n");
+                builder.append(readFile(file));
+            } catch (Exception ignored) {
+            }
+        }
+        return builder.toString();
     }
 
     private String shellQuote(String value) {
@@ -1335,6 +2799,12 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
             builder.append(new String(buffer, 0, read, StandardCharsets.UTF_8));
         }
         return builder.toString();
+    }
+
+    private String readUrl(String url) throws IOException {
+        try (InputStream inputStream = new URL(url).openStream()) {
+            return readStream(inputStream);
+        }
     }
 
     private String readFile(File file) throws IOException {
