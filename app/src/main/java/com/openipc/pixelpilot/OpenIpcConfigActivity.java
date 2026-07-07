@@ -239,6 +239,7 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         findViewById(R.id.imageOpenIpcLogo).setOnClickListener(v -> showOpenIpcAboutDialog());
         findViewById(R.id.btnConnect).setOnClickListener(v -> connectAndRead());
         textStatus.setOnClickListener(v -> showOpenIpcLogs());
+        findViewById(R.id.btnReadMajestic).setOnClickListener(v -> readMajesticConfig());
         btnSaveMajestic.setOnClickListener(v -> saveAndRestartMajestic());
         findViewById(R.id.btnReadWfb).setOnClickListener(v -> readWfbConfig());
         findViewById(R.id.btnSaveWfb).setOnClickListener(v -> saveWfbConfig());
@@ -1260,6 +1261,30 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
                 });
             } catch (Exception e) {
                 postError("Connect/read failed: " + e.getMessage());
+            }
+        });
+    }
+
+    private void readMajesticConfig() {
+        ConnectionConfig config = readConnectionConfig();
+        if (config == null) {
+            return;
+        }
+        setBusy(true, "Reading camera config...");
+        executor.execute(() -> {
+            try {
+                String majestic = downloadText(config, REMOTE_MAJESTIC);
+                parseMajestic(majestic);
+                mainHandler.post(() -> {
+                    rawCameraConfigEditing = false;
+                    setRawConfigEditing(textMajesticPreview, false);
+                    textMajesticPreview.setText(majestic);
+                    fillMajesticFields();
+                    btnSaveMajestic.setEnabled(true);
+                    setBusy(false, "Read " + REMOTE_MAJESTIC);
+                });
+            } catch (Exception e) {
+                postError("Read camera config failed: " + e.getMessage());
             }
         });
     }
