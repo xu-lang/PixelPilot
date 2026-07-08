@@ -100,6 +100,29 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     private static final int OPENIPC_LOG_MAX_FILES = 5;
     private static final int NAV_TEXT_SELECTED = Color.WHITE;
     private static final int NAV_TEXT_IDLE = Color.rgb(154, 170, 182);
+    private static final Map<String, String> FIRMWARE_MANUFACTURER_NAMES = new LinkedHashMap<>();
+    private static final Map<String, String> FIRMWARE_DEVICE_NAMES = new LinkedHashMap<>();
+    private static final Map<String, String> FIRMWARE_TYPE_NAMES = new LinkedHashMap<>();
+
+    static {
+        FIRMWARE_MANUFACTURER_NAMES.put("*", "Generic Manufacturer");
+        FIRMWARE_MANUFACTURER_NAMES.put("openipc", "OpenIPC");
+        FIRMWARE_MANUFACTURER_NAMES.put("emax", "EMax");
+        FIRMWARE_MANUFACTURER_NAMES.put("runcam", "RunCam");
+        FIRMWARE_MANUFACTURER_NAMES.put("caddx", "Caddx");
+
+        FIRMWARE_DEVICE_NAMES.put("*", "Generic Device");
+        FIRMWARE_DEVICE_NAMES.put("ssc338q", "Generic SSC338Q");
+        FIRMWARE_DEVICE_NAMES.put("mario-aio", "OpenIPC Mario AIO");
+        FIRMWARE_DEVICE_NAMES.put("thinker-aio", "OpenIPC Thinker AIO");
+        FIRMWARE_DEVICE_NAMES.put("thinker-aio-wifi", "OpenIPC Thinker AIO (Built In Wifi)");
+        FIRMWARE_DEVICE_NAMES.put("urllc-aio", "OpenIPC Generic SSC338");
+        FIRMWARE_DEVICE_NAMES.put("wifilink", "WiFi Link");
+        FIRMWARE_DEVICE_NAMES.put("wyvern-link", "Wyvern Link");
+
+        FIRMWARE_TYPE_NAMES.put("fpv", "OpenIPC-FPV firmware");
+        FIRMWARE_TYPE_NAMES.put("rubyfpv", "RubyFPV firmware");
+    }
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -429,6 +452,7 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         textFirmwareBackupProgress = findViewById(R.id.textFirmwareBackupProgress);
         textFirmwareRestoreProgress = findViewById(R.id.textFirmwareRestoreProgress);
         textPreferencesInfo = findViewById(R.id.textPreferencesInfo);
+        textPreferencesInfo.setTypeface(Typeface.MONOSPACE);
         btnSaveMajestic = findViewById(R.id.btnSaveMajestic);
         btnFirmwareRestore = findViewById(R.id.btnFirmwareRestore);
         btnFirmwareBootloader = findViewById(R.id.btnFirmwareBootloader);
@@ -980,12 +1004,34 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
                     .computeIfAbsent(device, key -> new LinkedHashMap<>())
                     .put(firmwareType, name);
         }
+        for (String name : names) {
+            if (name.toLowerCase().startsWith("ssc338q_rubyfpv")) {
+                addRubyFirmwareChoice(choices, name, soc);
+            }
+        }
         if (!choices.isEmpty() && "ssc338q".equalsIgnoreCase(soc)) {
             choices.computeIfAbsent("openipc", key -> new LinkedHashMap<>())
                     .computeIfAbsent("thinker-aio-wifi", key -> new LinkedHashMap<>())
                     .put("fpv", "ssc338q_fpv_openipc-thinker-aio-nor.tgz");
         }
         return choices;
+    }
+
+    private void addRubyFirmwareChoice(Map<String, Map<String, Map<String, String>>> choices, String name, String soc) {
+        if (!"ssc338q".equalsIgnoreCase(soc) || choices.isEmpty()) {
+            return;
+        }
+        if (name.contains("thinker_internal")) {
+            choices.computeIfAbsent("openipc", key -> new LinkedHashMap<>())
+                    .computeIfAbsent("thinker-aio-wifi", key -> new LinkedHashMap<>())
+                    .put("rubyfpv", name);
+            return;
+        }
+        for (Map<String, Map<String, String>> devices : choices.values()) {
+            for (Map<String, String> packages : devices.values()) {
+                packages.put("rubyfpv", name);
+            }
+        }
     }
 
     private void updateFirmwareManufacturerChoices() {
@@ -997,8 +1043,12 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         }
         List<String> manufacturers = new ArrayList<>(automaticFirmwareChoices.keySet());
         Collections.sort(manufacturers);
-        setSpinnerItems(spinnerFirmwareManufacturer, manufacturers.toArray(new String[0]));
-        updateFirmwareDeviceChoices(manufacturers.get(0));
+        List<String> labels = new ArrayList<>();
+        for (String manufacturer : manufacturers) {
+            labels.add(firmwareManufacturerLabel(manufacturer));
+        }
+        setSpinnerItems(spinnerFirmwareManufacturer, labels.toArray(new String[0]));
+        updateFirmwareDeviceChoices(labels.get(0));
     }
 
     private void updateFirmwareDeviceChoices() {
@@ -1006,7 +1056,8 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     }
 
     private void updateFirmwareDeviceChoices(String manufacturer) {
-        Map<String, Map<String, String>> devices = automaticFirmwareChoices.get(manufacturer);
+        String manufacturerId = firmwareManufacturerId(manufacturer);
+        Map<String, Map<String, String>> devices = automaticFirmwareChoices.get(manufacturerId);
         if (devices == null || devices.isEmpty()) {
             setSpinnerItems(spinnerFirmwareDevice, "");
             setSpinnerItems(spinnerFirmwareWfbRuby, "");
@@ -1014,8 +1065,12 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         }
         List<String> deviceNames = new ArrayList<>(devices.keySet());
         Collections.sort(deviceNames);
-        setSpinnerItems(spinnerFirmwareDevice, deviceNames.toArray(new String[0]));
-        updateFirmwarePackageChoices(manufacturer, deviceNames.get(0));
+        List<String> labels = new ArrayList<>();
+        for (String device : deviceNames) {
+            labels.add(firmwareDeviceLabel(device));
+        }
+        setSpinnerItems(spinnerFirmwareDevice, labels.toArray(new String[0]));
+        updateFirmwarePackageChoices(manufacturer, labels.get(0));
     }
 
     private void updateFirmwarePackageChoices() {
@@ -1023,15 +1078,52 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     }
 
     private void updateFirmwarePackageChoices(String manufacturer, String device) {
-        Map<String, Map<String, String>> devices = automaticFirmwareChoices.get(manufacturer);
-        Map<String, String> packages = devices == null ? null : devices.get(device);
+        Map<String, Map<String, String>> devices = automaticFirmwareChoices.get(firmwareManufacturerId(manufacturer));
+        Map<String, String> packages = devices == null ? null : devices.get(firmwareDeviceId(device));
         if (packages == null || packages.isEmpty()) {
             setSpinnerItems(spinnerFirmwareWfbRuby, "");
             return;
         }
         List<String> packageNames = new ArrayList<>(packages.keySet());
         Collections.sort(packageNames);
-        setSpinnerItems(spinnerFirmwareWfbRuby, packageNames.toArray(new String[0]));
+        List<String> labels = new ArrayList<>();
+        for (String packageName : packageNames) {
+            labels.add(firmwareTypeLabel(packageName));
+        }
+        setSpinnerItems(spinnerFirmwareWfbRuby, labels.toArray(new String[0]));
+    }
+
+    private String firmwareManufacturerLabel(String id) {
+        return FIRMWARE_MANUFACTURER_NAMES.containsKey(id) ? FIRMWARE_MANUFACTURER_NAMES.get(id) : id;
+    }
+
+    private String firmwareDeviceLabel(String id) {
+        return FIRMWARE_DEVICE_NAMES.containsKey(id) ? FIRMWARE_DEVICE_NAMES.get(id) : id;
+    }
+
+    private String firmwareTypeLabel(String id) {
+        return FIRMWARE_TYPE_NAMES.containsKey(id) ? FIRMWARE_TYPE_NAMES.get(id) : id;
+    }
+
+    private String firmwareManufacturerId(String label) {
+        return firmwareIdFromLabel(FIRMWARE_MANUFACTURER_NAMES, label);
+    }
+
+    private String firmwareDeviceId(String label) {
+        return firmwareIdFromLabel(FIRMWARE_DEVICE_NAMES, label);
+    }
+
+    private String firmwareTypeId(String label) {
+        return firmwareIdFromLabel(FIRMWARE_TYPE_NAMES, label);
+    }
+
+    private String firmwareIdFromLabel(Map<String, String> labels, String value) {
+        for (Map.Entry<String, String> entry : labels.entrySet()) {
+            if (entry.getValue().equals(value)) {
+                return entry.getKey();
+            }
+        }
+        return value;
     }
 
     private String spinnerValue(Spinner spinner) {
@@ -1684,15 +1776,15 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
     }
 
     private String selectedAutomaticFirmwarePackage() {
-        Map<String, Map<String, String>> devices = automaticFirmwareChoices.get(spinnerValue(spinnerFirmwareManufacturer));
+        Map<String, Map<String, String>> devices = automaticFirmwareChoices.get(firmwareManufacturerId(spinnerValue(spinnerFirmwareManufacturer)));
         if (devices == null) {
             return "";
         }
-        Map<String, String> packages = devices.get(spinnerValue(spinnerFirmwareDevice));
+        Map<String, String> packages = devices.get(firmwareDeviceId(spinnerValue(spinnerFirmwareDevice)));
         if (packages == null) {
             return "";
         }
-        return packages.get(spinnerValue(spinnerFirmwareWfbRuby));
+        return packages.get(firmwareTypeId(spinnerValue(spinnerFirmwareWfbRuby)));
     }
 
     private void performFirmwareSysupgradeFromUrl(String url) {
