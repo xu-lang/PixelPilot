@@ -119,6 +119,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
     private static final String PREF_DRONE_USERNAME = "drone_username";
     private static final String PREF_DRONE_PASSWORD = "drone_password";
+    private static final String PREF_DRONE_IP = "drone_ip";
 
     public boolean getVRSetting() {
         return getSharedPreferences("general", Context.MODE_PRIVATE).getBoolean("vr-mode", false);
@@ -1634,6 +1635,12 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
         layout.setOrientation(android.widget.LinearLayout.VERTICAL);
         layout.setPadding(50, 30, 50, 30); // Add some padding around the content
 
+        // EditText for drone web UI IP/address
+        final android.widget.EditText ipEditText = new android.widget.EditText(this);
+        ipEditText.setHint("IP address or URL");
+        ipEditText.setText(getDroneIp());
+        layout.addView(ipEditText);
+
         // EditText for username
         final android.widget.EditText usernameEditText = new android.widget.EditText(this);
         usernameEditText.setHint("Username");
@@ -1672,6 +1679,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
                 .setView(layout) // Set our custom layout
                 .setPositiveButton("Save", (dialog, which) -> {
                     // Save the new values to SharedPreferences
+                    setDroneIp(ipEditText.getText().toString());
                     setDroneUsername(usernameEditText.getText().toString());
                     setDronePassword(passwordEditText.getText().toString());
                     Toast.makeText(this, "Drone credentials saved.", Toast.LENGTH_SHORT).show();
@@ -1702,6 +1710,10 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
         return getSharedPreferences("general", Context.MODE_PRIVATE).getString(PREF_DRONE_PASSWORD, "12345");
     }
 
+    private String getDroneIp() {
+        return getSharedPreferences("general", Context.MODE_PRIVATE).getString(PREF_DRONE_IP, "10.5.0.10");
+    }
+
     // Helper method to save the drone password
     private void setDronePassword(String password) {
         SharedPreferences prefs = getSharedPreferences("general", Context.MODE_PRIVATE);
@@ -1710,12 +1722,19 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
         editor.apply();
     }
 
+    private void setDroneIp(String ip) {
+        SharedPreferences prefs = getSharedPreferences("general", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString(PREF_DRONE_IP, ip.trim());
+        editor.apply();
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     public void startBrowser() {
         WebView view = new WebView(this);
         view.setWebViewClient(new WebViewClient());
         view.getSettings().setJavaScriptEnabled(true);
-        view.loadUrl("10.5.0.10");
+        view.loadUrl(droneWebUrl());
 
         Dialog dialog = new Dialog(this);
         dialog.setContentView(view);
@@ -1739,5 +1758,13 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
                 handler.proceed(username, password);
             }
         });
+    }
+
+    private String droneWebUrl() {
+        String value = getDroneIp().trim();
+        if (value.startsWith("http://") || value.startsWith("https://")) {
+            return value;
+        }
+        return "http://" + value;
     }
 }
