@@ -10,7 +10,10 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -2720,12 +2723,18 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         findViewById(R.id.btnConnect).setEnabled(!busy);
         btnSaveMajestic.setEnabled(!busy && majesticConfig != null);
         textStatus.setText(message);
-        appendOpenIpcLog(message);
+        String level = busy ? "info" : "note";
+        textStatus.setTextColor(openIpcLogColor(level));
+        appendOpenIpcLog(level, message);
     }
 
     private void postError(String message) {
         mainHandler.post(() -> {
-            setBusy(false, message);
+            findViewById(R.id.btnConnect).setEnabled(true);
+            btnSaveMajestic.setEnabled(majesticConfig != null);
+            textStatus.setText(message);
+            textStatus.setTextColor(openIpcLogColor("error"));
+            appendOpenIpcLog("error", message);
             Toast.makeText(this, message, Toast.LENGTH_LONG).show();
         });
     }
@@ -2734,13 +2743,13 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         return TextUtils.isEmpty(value) ? "unknown" : value;
     }
 
-    private void appendOpenIpcLog(String message) {
+    private void appendOpenIpcLog(String level, String message) {
         executor.execute(() -> {
             try {
                 rotateOpenIpcLogsIfNeeded();
                 File logFile = openIpcLogFile(0);
                 String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date());
-                String line = timestamp + " - " + message + "\n";
+                String line = timestamp + " [" + level + "] " + message + "\n";
                 try (FileOutputStream outputStream = new FileOutputStream(logFile, true)) {
                     outputStream.write(line.getBytes(StandardCharsets.UTF_8));
                 }
@@ -2800,7 +2809,7 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
                 container.addView(subtitle, subtitleParams);
 
                 TextView textView = new TextView(this);
-                textView.setText(TextUtils.isEmpty(logs) ? "No OpenIPC logs yet." : logs);
+                textView.setText(TextUtils.isEmpty(logs) ? "No OpenIPC logs yet." : coloredOpenIpcLogs(logs));
                 textView.setTextColor(getColor(R.color.openipc_text));
                 textView.setTextSize(12);
                 textView.setTypeface(Typeface.MONOSPACE);
@@ -2902,6 +2911,30 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
             }
         }
         return builder.toString();
+    }
+
+    private CharSequence coloredOpenIpcLogs(String logs) {
+        SpannableStringBuilder builder = new SpannableStringBuilder();
+        String[] lines = logs.split("\n", -1);
+        for (String line : lines) {
+            int start = builder.length();
+            builder.append(line).append('\n');
+            builder.setSpan(new ForegroundColorSpan(openIpcLogColor(line)), start, builder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return builder;
+    }
+
+    private int openIpcLogColor(String line) {
+        if (line.contains("[note]") || "note".equals(line)) {
+            return Color.rgb(80, 200, 120);
+        }
+        if (line.contains("[warn]") || "warn".equals(line)) {
+            return Color.rgb(238, 190, 80);
+        }
+        if (line.contains("[error]") || "error".equals(line)) {
+            return Color.rgb(245, 100, 100);
+        }
+        return getColor(R.color.openipc_text);
     }
 
     private String shellQuote(String value) {
