@@ -12,6 +12,7 @@
 #include <atomic>
 #include <cstdio>
 #include <iostream>
+#include <string>
 #include <thread>
 // Starts a new thread that continuously checks for new data on UDP port
 
@@ -36,6 +37,7 @@ class UDPReceiver
      */
     UDPReceiver(
         JavaVM*       javaVm,
+        std::string   listenAddress,
         int           port,
         std::string   name,
         int           CPUPriority,
@@ -60,6 +62,8 @@ class UDPReceiver
     // Get function(s) for private member variables
     long getNReceivedBytes() const;
 
+    long getNReceivedPackets() const;
+
     std::string getSourceIPAddress() const;
 
     int getPort() const;
@@ -69,6 +73,7 @@ class UDPReceiver
 
     const DATA_CALLBACK onDataReceivedCallback = nullptr;
     SOURCE_IP_CALLBACK  onSourceIP             = nullptr;
+    const std::string   mListenAddress;
     const int           mPort;
     const int           mCPUPriority;
     // Hmm....
@@ -79,6 +84,7 @@ class UDPReceiver
     std::string                  senderIP       = "0.0.0.0";
     std::atomic<bool>            receiving      = false;
     std::atomic<long>            nReceivedBytes = 0;
+    std::atomic<long>            nReceivedPackets = 0;
     std::unique_ptr<std::thread> mUDPReceiverThread;
     // https://en.wikipedia.org/wiki/User_Datagram_Protocol
     // 65,507 bytes (65,535 − 8 byte UDP header − 20 byte IP header).

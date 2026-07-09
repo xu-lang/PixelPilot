@@ -11,8 +11,11 @@
 
 #define TAG "pixelpilot"
 
-VideoPlayer::VideoPlayer(JNIEnv* env, jobject context)
-    : mParser{std::bind(&VideoPlayer::onNewNALU, this, std::placeholders::_1)}, videoDecoder(env)
+VideoPlayer::VideoPlayer(JNIEnv* env, jobject context, std::string listenAddress, int listenPort)
+    : listenAddress(std::move(listenAddress)),
+      listenPort(listenPort),
+      mParser{std::bind(&VideoPlayer::onNewNALU, this, std::placeholders::_1)},
+      videoDecoder(env)
 {
     env->GetJavaVM(&javaVm);
     videoDecoder.registerOnDecoderRatioChangedCallback(
@@ -163,11 +166,11 @@ void VideoPlayer::start(JNIEnv* env, jobject androidContext)
 {
     AAssetManager* assetManager = NDKHelper::getAssetManagerFromContext2(env, androidContext);
     // mParser.setLimitFPS(-1); //Default: Real time !
-    const int VS_PORT = 5600;
     mUDPReceiver.release();
     mUDPReceiver = std::make_unique<UDPReceiver>(
         javaVm,
-        VS_PORT,
+        listenAddress,
+        listenPort,
         "UdpReceiver",
         -16,
         [this](const uint8_t* data, size_t data_length) { onNewRTPData(data, data_length); },
@@ -268,9 +271,12 @@ inline VideoPlayer* native(jlong ptr)
 extern "C"
 {
     extern "C" JNIEXPORT jlong JNICALL
-    Java_com_openipc_videonative_VideoPlayer_nativeInitialize(JNIEnv* env, jclass clazz, jobject context)
+    Java_com_openipc_videonative_VideoPlayer_nativeInitialize(
+        JNIEnv* env, jclass clazz, jobject context, jstring listen_address, jint listen_port)
     {
-        auto* p = new VideoPlayer(env, context);
+        const char* listenAddressChars = env->GetStringUTFChars(listen_address, nullptr);
+        auto*       p                  = new VideoPlayer(env, context, listenAddressChars, listen_port);
+        env->ReleaseStringUTFChars(listen_address, listenAddressChars);
         return jptr(p);
     }
 
@@ -324,6 +330,17 @@ extern "C"
         }
 
         return (jboolean) ret;
+    }
+
+    JNI_METHOD(jlong, getReceivedUdpPackets)
+    (JNIEnv* env, jclass jclass1, jlong testReceiverN)
+    {
+        VideoPlayer* p = native(testReceiverN);
+        if (p->mUDPReceiver == nullptr)
+        {
+            return 0;
+        }
+        return p->mUDPReceiver->getNReceivedPackets();
     }
 
     JNI_METHOD(jboolean, receivingVideoButCannotParse)

@@ -204,7 +204,11 @@ public class WfbLinkManager extends BroadcastReceiver {
         String text = "Starting wfb-ng channel " + wifiChannel + " with " + String.format(
                 "[%04X", dev.getVendorId()) + ":" + String.format("%04X]", dev.getProductId());
         binding.tvMessage.setText(text);
-        wfbLink.start(wifiChannel, bandWidth.getValue(), dev);
+        wfbLink.start(wifiChannel,
+                bandWidth.getValue(),
+                dev,
+                VideoActivity.getWfbVideoTargetAddress(context),
+                VideoActivity.getWfbVideoTargetPort(context));
         return true;
     }
 }

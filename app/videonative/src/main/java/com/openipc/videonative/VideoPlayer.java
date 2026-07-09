@@ -35,12 +35,12 @@ public class VideoPlayer implements IVideoParamsChanged {
     private Timer timer;
 
     // Setup as much as possible without creating the decoder
-    public VideoPlayer(final AppCompatActivity parent) {
+    public VideoPlayer(final AppCompatActivity parent, String listenAddress, int listenPort) {
         this.context = parent;
-        nativeVideoPlayer = nativeInitialize(context);
+        nativeVideoPlayer = nativeInitialize(context, listenAddress, listenPort);
     }
 
-    public static native long nativeInitialize(Context context);
+    public static native long nativeInitialize(Context context, String listenAddress, int listenPort);
 
     public static native void nativeFinalize(long nativeVideoPlayer);
 
@@ -62,6 +62,8 @@ public class VideoPlayer implements IVideoParamsChanged {
     public static native String getVideoInfoString(long nativeInstance);
 
     public static native boolean anyVideoDataReceived(long nativeInstance);
+
+    public static native long getReceivedUdpPackets(long nativeInstance);
 
     public static native boolean anyVideoBytesParsedSinceLastCall(long nativeInstance);
 
@@ -122,6 +124,10 @@ public class VideoPlayer implements IVideoParamsChanged {
 
     public boolean isRunning() {
         return timer != null;
+    }
+
+    public long getReceivedUdpPackets() {
+        return getReceivedUdpPackets(nativeVideoPlayer);
     }
 
     public void startDvr(int fd, boolean enabled_fmp4) {
@@ -233,4 +239,3 @@ public class VideoPlayer implements IVideoParamsChanged {
     }
 
 }
-

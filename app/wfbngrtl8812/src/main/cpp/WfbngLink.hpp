@@ -15,6 +15,7 @@ extern "C" {
 #include <list>
 #include <map>
 #include <mutex>
+#include <string>
 #include <vector> // Added for std::vector
 
 const u8 wfb_tx_port = 160;
@@ -33,6 +34,11 @@ class WfbngLink {
     int run(JNIEnv *env, jobject androidContext, jint wifiChannel, jint bw, jint fd);
 
     void initAgg();
+
+    void setVideoTarget(const std::string &address, int port) {
+        video_target_address = address;
+        video_target_port = port;
+    }
 
     void stop(JNIEnv *env, jobject androidContext, jint fd);
 
@@ -98,6 +104,8 @@ class WfbngLink {
     uint32_t video_channel_id_be;
     uint32_t mavlink_channel_id_be;
     uint32_t udp_channel_id_be;
+    std::string video_target_address{"127.0.0.1"};
+    int video_target_port{5600};
 
     Logger_t log;
     std::unique_ptr<std::thread> usb_event_thread{nullptr};

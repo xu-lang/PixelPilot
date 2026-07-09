@@ -61,7 +61,6 @@ WfbngLink::WfbngLink(JNIEnv *env, jobject context)
 }
 
 void WfbngLink::initAgg() {
-    std::string client_addr = "127.0.0.1";
     uint64_t epoch = 0;
 
     uint8_t video_radio_port = 0;
@@ -69,7 +68,8 @@ void WfbngLink::initAgg() {
     video_channel_id_be = htobe32(video_channel_id_f);
     auto udsName = std::string("my_socket");
 
-    video_aggregator = std::make_unique<AggregatorUDPv4>(client_addr, 5600, keyPath, epoch, video_channel_id_f, 0);
+    video_aggregator = std::make_unique<AggregatorUDPv4>(
+        video_target_address, video_target_port, keyPath, epoch, video_channel_id_f, 0);
 
     int mavlink_client_port = 14550;
     uint8_t mavlink_radio_port = 0x10;
@@ -77,7 +77,7 @@ void WfbngLink::initAgg() {
     mavlink_channel_id_be = htobe32(mavlink_channel_id_f);
 
     mavlink_aggregator =
-        std::make_unique<AggregatorUDPv4>(client_addr, mavlink_client_port, keyPath, epoch, mavlink_channel_id_f, 0);
+        std::make_unique<AggregatorUDPv4>("127.0.0.1", mavlink_client_port, keyPath, epoch, mavlink_channel_id_f, 0);
 
     int udp_client_port = 8000;
     uint8_t udp_radio_port = wfb_rx_port;
@@ -85,7 +85,7 @@ void WfbngLink::initAgg() {
     udp_channel_id_be = htobe32(udp_channel_id_f);
 
     udp_aggregator =
-        std::make_unique<AggregatorUDPv4>(client_addr, udp_client_port, keyPath, epoch, udp_channel_id_f, 0);
+        std::make_unique<AggregatorUDPv4>("127.0.0.1", udp_client_port, keyPath, epoch, udp_channel_id_f, 0);
 }
 
 int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint fd) {
@@ -327,8 +327,21 @@ extern "C" JNIEXPORT jlong JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_nativ
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_nativeRun(
-    JNIEnv *env, jclass clazz, jlong wfbngLinkN, jobject androidContext, jint wifiChannel, int bandWidth, jint fd) {
-    native(wfbngLinkN)->run(env, androidContext, wifiChannel, bandWidth, fd);
+    JNIEnv *env,
+    jclass clazz,
+    jlong wfbngLinkN,
+    jobject androidContext,
+    jint wifiChannel,
+    int bandWidth,
+    jint fd,
+    jstring videoTargetAddress,
+    jint videoTargetPort) {
+    WfbngLink *link = native(wfbngLinkN);
+    const char *videoTargetAddressChars = env->GetStringUTFChars(videoTargetAddress, nullptr);
+    link->setVideoTarget(videoTargetAddressChars, videoTargetPort);
+    env->ReleaseStringUTFChars(videoTargetAddress, videoTargetAddressChars);
+    link->initAgg();
+    link->run(env, androidContext, wifiChannel, bandWidth, fd);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_nativeStartAdaptivelink(JNIEnv *env,

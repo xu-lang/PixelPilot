@@ -39,7 +39,7 @@ public class WfbNgLink implements WfbNGStatsChanged {
 
     // Native method declarations.
     public static native long nativeInitialize(Context context);
-    public static native void nativeRun(long nativeInstance, Context context, int wifiChannel, int bandWidth, int fd);
+    public static native void nativeRun(long nativeInstance, Context context, int wifiChannel, int bandWidth, int fd, String videoTargetAddress, int videoTargetPort);
     public static native void nativeStop(long nativeInstance, Context context, int fd);
     public static native void nativeRefreshKey(long nativeInstance);
     public static native <T extends WfbNGStatsChanged> void nativeCallBack(T t, long nativeInstance);
@@ -92,12 +92,12 @@ public class WfbNgLink implements WfbNGStatsChanged {
         nativeSetUseStbc(nativeWfbngLink, use);
     }
 
-    public synchronized void start(int wifiChannel, int bandWidth, UsbDevice usbDevice) {
+    public synchronized void start(int wifiChannel, int bandWidth, UsbDevice usbDevice, String videoTargetAddress, int videoTargetPort) {
         Log.d(TAG, "wfb-ng monitoring on " + usbDevice.getDeviceName() + " using wifi channel " + wifiChannel);
         UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
         UsbDeviceConnection usbDeviceConnection = usbManager.openDevice(usbDevice);
         int fd = usbDeviceConnection.getFileDescriptor();
-        Thread t = new Thread(() -> nativeRun(nativeWfbngLink, context, wifiChannel, bandWidth, fd));
+        Thread t = new Thread(() -> nativeRun(nativeWfbngLink, context, wifiChannel, bandWidth, fd, videoTargetAddress, videoTargetPort));
         t.setName("wfb-" + usbDevice.getDeviceName().split("/dev/bus/usb/")[1]);
         linkThreads.put(usbDevice, t);
         linkConns.put(usbDevice, usbDeviceConnection);

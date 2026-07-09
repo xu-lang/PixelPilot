@@ -100,6 +100,19 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             }
         }
     };
+    final Runnable udpPacketDebugRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (videoPlayer != null) {
+                binding.tvUdpPacketDebug.setText(String.format(Locale.US,
+                        "UDP packets: %d",
+                        videoPlayer.getReceivedUdpPackets()));
+            }
+            if (getShowUdpPacketDebug(VideoActivity.this)) {
+                handler.postDelayed(this, 1000);
+            }
+        }
+    };
     protected DecodingInfo mDecodingInfo;
     int lastVideoW = 0, lastVideoH = 0, lastCodec = 1;
     WfbLinkManager wfbLinkManager;
@@ -120,6 +133,14 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     private static final String PREF_DRONE_USERNAME = "drone_username";
     private static final String PREF_DRONE_PASSWORD = "drone_password";
     private static final String PREF_DRONE_IP = "drone_ip";
+    private static final String PREF_WFB_VIDEO_TARGET_ADDRESS = "wfb_video_target_address";
+    private static final String PREF_WFB_VIDEO_TARGET_PORT = "wfb_video_target_port";
+    private static final String PREF_VIDEO_LISTEN_ADDRESS = "video_listen_address";
+    private static final String PREF_VIDEO_LISTEN_PORT = "video_listen_port";
+    private static final String PREF_SHOW_UDP_PACKET_DEBUG = "show_udp_packet_debug";
+    private static final String DEFAULT_WFB_VIDEO_TARGET_ADDRESS = "127.0.0.1";
+    private static final String DEFAULT_VIDEO_LISTEN_ADDRESS = "0.0.0.0";
+    private static final int DEFAULT_VIDEO_PORT = 5600;
 
     public boolean getVRSetting() {
         return getSharedPreferences("general", Context.MODE_PRIVATE).getBoolean("vr-mode", false);
@@ -140,6 +161,31 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     public static int getBandwidth(Context context) {
         return context.getSharedPreferences("general",
                 Context.MODE_PRIVATE).getInt("bandwidth", 20);
+    }
+
+    public static String getWfbVideoTargetAddress(Context context) {
+        return context.getSharedPreferences("general", Context.MODE_PRIVATE)
+                .getString(PREF_WFB_VIDEO_TARGET_ADDRESS, DEFAULT_WFB_VIDEO_TARGET_ADDRESS);
+    }
+
+    public static int getWfbVideoTargetPort(Context context) {
+        return context.getSharedPreferences("general", Context.MODE_PRIVATE)
+                .getInt(PREF_WFB_VIDEO_TARGET_PORT, DEFAULT_VIDEO_PORT);
+    }
+
+    public static String getVideoListenAddress(Context context) {
+        return context.getSharedPreferences("general", Context.MODE_PRIVATE)
+                .getString(PREF_VIDEO_LISTEN_ADDRESS, DEFAULT_VIDEO_LISTEN_ADDRESS);
+    }
+
+    public static int getVideoListenPort(Context context) {
+        return context.getSharedPreferences("general", Context.MODE_PRIVATE)
+                .getInt(PREF_VIDEO_LISTEN_PORT, DEFAULT_VIDEO_PORT);
+    }
+
+    public static boolean getShowUdpPacketDebug(Context context) {
+        return context.getSharedPreferences("general", Context.MODE_PRIVATE)
+                .getBoolean(PREF_SHOW_UDP_PACKET_DEBUG, false);
     }
 
     public static String wirelessInfo() {
@@ -250,6 +296,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
         // UI Setup
         initializeUI();
+        binding.tvUdpPacketDebug.setVisibility(getShowUdpPacketDebug(this) ? View.VISIBLE : View.GONE);
 
         // WFB-NG Setup
         initializeWfbNg();
@@ -331,7 +378,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
      */
     private void initializeVideoPlayers() {
         try {
-            videoPlayer = new VideoPlayer(this);
+            videoPlayer = new VideoPlayer(this, getVideoListenAddress(this), getVideoListenPort(this));
             videoPlayer.setIVideoParamsChanged(this);
         } catch (UnsatisfiedLinkError e) {
             Log.w(TAG, "Video native library is unavailable on this device/ABI. Video playback disabled for UI debugging.", e);
@@ -688,7 +735,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
      * Submenu handling WFB-NG logic (e.g. selecting gs.key from storage).
      */
     private void setupWFBSubMenu(PopupMenu popup) {
-        SubMenu wfb = popup.getMenu().addSubMenu("WFB-NG key");
+        SubMenu wfb = popup.getMenu().addSubMenu("WFB-NG");
         MenuItem keyBtn = wfb.add("gs.key");
         keyBtn.setOnMenuItemClickListener(item -> {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -697,6 +744,116 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             startActivityForResult(intent, PICK_KEY_REQUEST_CODE);
             return true;
         });
+
+        MenuItem videoTransport = wfb.add("Video transport...");
+        videoTransport.setOnMenuItemClickListener(item -> {
+            showVideoTransportDialog();
+            return true;
+        });
+    }
+
+    private void showVideoTransportDialog() {
+        SharedPreferences prefs = getSharedPreferences("general", MODE_PRIVATE);
+        android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        int padding = (int) (16 * getResources().getDisplayMetrics().density);
+        layout.setPadding(padding, 0, padding, padding);
+        scrollView.addView(layout);
+
+        addTransportLabel(layout, "WFB-NG sends RTP to");
+        android.widget.EditText wfbTarget = createTransportEditText(
+                "Example: 127.0.0.1:5600",
+                getWfbVideoTargetAddress(this) + ":" + getWfbVideoTargetPort(this));
+        layout.addView(wfbTarget);
+
+        addTransportLabel(layout, "VideoNative listens on");
+        android.widget.EditText videoListen = createTransportEditText(
+                "Example: 0.0.0.0:5600",
+                getVideoListenAddress(this) + ":" + getVideoListenPort(this));
+        layout.addView(videoListen);
+
+        android.widget.CheckBox showUdpPacketDebug = new android.widget.CheckBox(this);
+        showUdpPacketDebug.setText("Show UDP packet counter");
+        showUdpPacketDebug.setChecked(getShowUdpPacketDebug(this));
+        layout.addView(showUdpPacketDebug);
+
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Video transport")
+                .setView(scrollView)
+                .setPositiveButton("OK", (dialog, which) -> {
+                    HostPort newWfbTarget;
+                    HostPort newVideoListen;
+                    try {
+                        newWfbTarget = parseHostPort(wfbTarget.getText().toString(), "WFB-NG target");
+                        newVideoListen = parseHostPort(videoListen.getText().toString(), "VideoNative listen address");
+                    } catch (IllegalArgumentException e) {
+                        Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    prefs.edit()
+                            .putString(PREF_WFB_VIDEO_TARGET_ADDRESS, newWfbTarget.host)
+                            .putInt(PREF_WFB_VIDEO_TARGET_PORT, newWfbTarget.port)
+                            .putString(PREF_VIDEO_LISTEN_ADDRESS, newVideoListen.host)
+                            .putInt(PREF_VIDEO_LISTEN_PORT, newVideoListen.port)
+                            .putBoolean(PREF_SHOW_UDP_PACKET_DEBUG, showUdpPacketDebug.isChecked())
+                            .apply();
+                    resetApp();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private android.widget.EditText createTransportEditText(String hint, String value) {
+        android.widget.EditText editText = new android.widget.EditText(this);
+        editText.setHint(hint);
+        editText.setSingleLine(true);
+        editText.setText(value);
+        editText.setPadding(0, 0, 0, 8);
+        return editText;
+    }
+
+    private void addTransportLabel(android.widget.LinearLayout layout, String text) {
+        android.widget.TextView label = new android.widget.TextView(this);
+        label.setText(text);
+        label.setPadding(0, 10, 0, 4);
+        layout.addView(label);
+    }
+
+    private HostPort parseHostPort(String value, String fieldName) {
+        String trimmed = value.trim();
+        int separator = trimmed.lastIndexOf(':');
+        if (separator <= 0 || separator == trimmed.length() - 1) {
+            throw new IllegalArgumentException(fieldName + " must use host:port format.");
+        }
+        String host = trimmed.substring(0, separator).trim();
+        if (host.isEmpty()) {
+            throw new IllegalArgumentException(fieldName + " host cannot be empty.");
+        }
+        return new HostPort(host, parsePort(trimmed.substring(separator + 1)));
+    }
+
+    private int parsePort(String value) {
+        try {
+            int port = Integer.parseInt(value.trim());
+            if (port < 1 || port > 65535) {
+                throw new IllegalArgumentException("Port must be between 1 and 65535.");
+            }
+            return port;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Port must be a number.");
+        }
+    }
+
+    private static class HostPort {
+        final String host;
+        final int port;
+
+        HostPort(String host, int port) {
+            this.host = host;
+            this.port = port;
+        }
     }
 
     /**
@@ -1396,6 +1553,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             videoPlayer.stop();
             videoPlayer.stopAudio();
         }
+        handler.removeCallbacks(udpPacketDebugRunnable);
         if (wfbLinkManager != null) {
             wfbLinkManager.stopAdapters();
         }
@@ -1417,6 +1575,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             mavlinkAvailable = false;
         }
         handler.removeCallbacks(runnable);
+        handler.removeCallbacks(udpPacketDebugRunnable);
         unregisterReceivers();
         if (wfbLinkManager != null) {
             wfbLinkManager.stopAdapters();
@@ -1444,6 +1603,14 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
         if (videoPlayer != null) {
             videoPlayer.start();
             videoPlayer.startAudio();
+            if (getShowUdpPacketDebug(this)) {
+                binding.tvUdpPacketDebug.setVisibility(View.VISIBLE);
+                handler.removeCallbacks(udpPacketDebugRunnable);
+                handler.post(udpPacketDebugRunnable);
+            } else {
+                binding.tvUdpPacketDebug.setVisibility(View.GONE);
+                handler.removeCallbacks(udpPacketDebugRunnable);
+            }
         }
 
         osdManager.restoreOSDConfig();

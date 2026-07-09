@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <fstream>
 #include <queue>
+#include <string>
 #include "AudioDecoder.h"
 #include "BufferedPacketQueue.h"
 #include "UdpReceiver.h"
@@ -21,7 +22,7 @@
 class VideoPlayer
 {
   public:
-    VideoPlayer(JNIEnv* env, jobject context);
+    VideoPlayer(JNIEnv* env, jobject context, std::string listenAddress, int listenPort);
 
     void onNewRTPData(const uint8_t* data, const std::size_t data_length);
 
@@ -69,6 +70,8 @@ class VideoPlayer
     };
     const std::string   GROUND_RECORDING_DIRECTORY;
     JavaVM*             javaVm = nullptr;
+    std::string         listenAddress;
+    int                 listenPort;
     H26XParser          mParser;
     BufferedPacketQueue mBufferedPacketQueueVideo, mBufferedPacketQueueAudio;
 

@@ -16,12 +16,14 @@
 
 UDPReceiver::UDPReceiver(
     JavaVM*       javaVm,
+    std::string   listenAddress,
     int           port,
     std::string   name,
     int           CPUPriority,
     DATA_CALLBACK onDataReceivedCallback,
     size_t        WANTED_RCVBUF_SIZE)
-    : mPort(port),
+    : mListenAddress(std::move(listenAddress)),
+      mPort(port),
       mName(std::move(name)),
       WANTED_RCVBUF_SIZE(WANTED_RCVBUF_SIZE),
       mCPUPriority(CPUPriority),
@@ -38,6 +40,11 @@ void UDPReceiver::registerOnSourceIPFound(SOURCE_IP_CALLBACK onSourceIP1)
 long UDPReceiver::getNReceivedBytes() const
 {
     return nReceivedBytes;
+}
+
+long UDPReceiver::getNReceivedPackets() const
+{
+    return nReceivedPackets;
 }
 
 std::string UDPReceiver::getSourceIPAddress() const
@@ -104,7 +111,16 @@ void UDPReceiver::receiveFromUDPLoop()
     struct sockaddr_in myaddr;
     memset((uint8_t*) &myaddr, 0, sizeof(myaddr));
     myaddr.sin_family      = AF_INET;
-    myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    if (mListenAddress == "0.0.0.0" || mListenAddress.empty())
+    {
+        myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    }
+    else if (inet_pton(AF_INET, mListenAddress.c_str(), &myaddr.sin_addr) != 1)
+    {
+        MLOGE << "Invalid listen address: " << mListenAddress;
+        close(mSocket);
+        return;
+    }
     myaddr.sin_port        = htons(mPort);
     if (bind(mSocket, (struct sockaddr*) &myaddr, sizeof(myaddr)) == -1)
     {
@@ -114,7 +130,7 @@ void UDPReceiver::receiveFromUDPLoop()
     // wrap into unique pointer to avoid running out of stack
     const auto buff = std::make_unique<std::array<uint8_t, UDP_PACKET_MAX_SIZE>>();
 
-    MLOGD << "Listening on " << INADDR_ANY << ":" << mPort;
+    MLOGD << "Listening on " << mListenAddress << ":" << mPort;
 
     sockaddr_in source;
     socklen_t   sourceLen = sizeof(sockaddr_in);
@@ -134,6 +150,7 @@ void UDPReceiver::receiveFromUDPLoop()
             onDataReceivedCallback(buff->data(), (size_t) message_length);
 
             nReceivedBytes += message_length;
+            nReceivedPackets++;
             // The source ip stuff
             const char* p  = inet_ntoa(source.sin_addr);
             std::string s1 = std::string(p);
