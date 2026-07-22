@@ -508,7 +508,7 @@ public class OpenIpcConfigActivity extends AppCompatActivity {
         setSpinnerItems(spinnerFps, rangeStrings(20, 120, 10));
         setSpinnerItems(spinnerCodec, "h264", "h265");
         setSpinnerItems(spinnerBitrate, multiplesOf1024(1, 40));
-        setSpinnerItems(spinnerExposure, "5", "6", "8", "10", "11", "12", "14", "16", "33", "50");
+        setSpinnerItems(spinnerExposure, "1", "5", "6", "8", "10", "11", "12", "14", "16", "33", "50");
         setSpinnerItems(spinnerContrast, multiplesOf5(1, 100));
         setSpinnerItems(spinnerHue, multiplesOf5(1, 100));
         setSpinnerItems(spinnerSaturation, multiplesOf5(1, 100));

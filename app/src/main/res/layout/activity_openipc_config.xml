@@ -465,7 +465,7 @@
 
                         <TextView style="@style/OpenIpcSectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:text="Camera Sensors" />
                         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="56dp" android:orientation="horizontal">
-                            <Spinner style="@style/OpenIpcSpinner" android:id="@+id/spinnerSensorBin" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                            <Spinner style="@style/OpenIpcInlineSpinner" android:id="@+id/spinnerSensorBin" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
                             <Button style="@style/OpenIpcButton" android:id="@+id/btnUploadApplySensorBin" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:text="Apply" />
                         </LinearLayout>
 
