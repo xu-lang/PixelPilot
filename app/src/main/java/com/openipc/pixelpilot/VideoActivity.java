@@ -1693,12 +1693,15 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
                 binding.tvMessage.setVisibility(View.GONE);
                 binding.wifiMessage.setVisibility(View.GONE);
             }
+            final float bitrateKbps = decodingInfo.currentKiloBitsPerSecond;
+            final boolean showMbps = bitrateKbps > 1000;
+            final float displayBitrate = showMbps ? bitrateKbps / 1000 : bitrateKbps;
             String info = "%dx%d@%.0f " + (decodingInfo.nCodec == 1 ? " H265 " : " H264 ")
-                    + (decodingInfo.currentKiloBitsPerSecond > 1000 ? " %.1fMbps " : " %.1fKpbs ")
+                    + (showMbps ? " %.1fMbps " : " %.1fKbps ")
                     + " %.1fms";
             binding.tvVideoStats.setText(String.format(Locale.US, info,
                     lastVideoW, lastVideoH, decodingInfo.currentFPS,
-                    decodingInfo.currentKiloBitsPerSecond / 1000,
+                    displayBitrate,
                     decodingInfo.avgTotalDecodingTime_ms));
         });
     }
