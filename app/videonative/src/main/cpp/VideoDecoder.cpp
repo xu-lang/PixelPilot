@@ -80,11 +80,36 @@ void VideoDecoder::registerOnDecodingInfoChangedCallback(DECODING_INFO_CHANGED_C
 
 void VideoDecoder::interpretNALU(const NALU& nalu)
 {
-    // TODO: RN switching between h264 / h265 requires re-setting the surface
-    IS_H265             = nalu.IS_H265_PACKET;
-    decodingInfo.nCodec = IS_H265;
-    // we need this lock, since the receiving/parsing/feeding does not run on the same thread who sets the input surface
+    // MediaCodec cannot switch between H264 and H265 in-place. If the sender
+    // changes codec while the app is running, tear down the configured decoder
+    // and wait for the new codec's VPS/SPS/PPS or SPS/PPS before configuring again.
     std::lock_guard<std::mutex> lock(mMutexInputPipe);
+    const bool codecChanged = currentCodecKnown && IS_H265 != nalu.IS_H265_PACKET;
+    if (codecChanged)
+    {
+        MLOGD << "Video codec changed from " << (IS_H265 ? "H265" : "H264") << " to "
+              << (nalu.IS_H265_PACKET ? "H265" : "H264") << "; resetting decoder";
+        for (int idx = 0; idx < 2; idx++)
+        {
+            if (decoder.configured[idx] && decoder.codec[idx] != nullptr)
+            {
+                AMediaCodec_stop(decoder.codec[idx]);
+                if (mCheckOutputThread[idx] && mCheckOutputThread[idx]->joinable())
+                {
+                    mCheckOutputThread[idx]->join();
+                    mCheckOutputThread[idx].reset();
+                }
+                AMediaCodec_delete(decoder.codec[idx]);
+                decoder.codec[idx] = nullptr;
+                decoder.configured[idx] = false;
+            }
+        }
+        mKeyFrameFinder.reset();
+        resetStatistics();
+    }
+    IS_H265 = nalu.IS_H265_PACKET;
+    currentCodecKnown = true;
+    decodingInfo.nCodec = IS_H265;
     decodingInfo.nNALU++;
     if (nalu.getSize() <= 4)
     {
@@ -343,6 +368,7 @@ void VideoDecoder::checkOutputLoop(int idx)
             decodingInfo.avgParsingTime_ms       = parsingTime.getAvg_ms();
             decodingInfo.avgWaitForInputBTime_ms = waitForInputB.getAvg_ms();
             decodingInfo.nDecodedFrames          = nDecodedFrames.getAbsolute();
+            decodingInfo.nCodec                  = IS_H265;
             printAvgLog();
             if (onDecodingInfoChangedCallback != nullptr)
             {

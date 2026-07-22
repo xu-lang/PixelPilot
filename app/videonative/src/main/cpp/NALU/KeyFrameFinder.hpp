@@ -79,7 +79,7 @@ class KeyFrameFinder
 
     static void appendNaluData(std::vector<uint8_t>& buff, const NALU& nalu)
     {
-        buff.insert(buff.begin(), nalu.getData(), nalu.getData() + nalu.getSize());
+        buff.insert(buff.end(), nalu.getData(), nalu.getData() + nalu.getSize());
     }
 
     void reset()

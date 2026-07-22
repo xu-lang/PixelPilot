@@ -132,7 +132,8 @@ class VideoDecoder
     static constexpr int64_t    BUFFER_TIMEOUT_US = 17 * 1000;  // 17ms (a little bit more than 17 ms (==60 fps))
   private:
     KeyFrameFinder mKeyFrameFinder;
-    bool           IS_H265 = false;
+    bool           IS_H265           = false;
+    bool           currentCodecKnown = false;
 };
 
 #endif  // FPVUE_VIDEODECODER_H
